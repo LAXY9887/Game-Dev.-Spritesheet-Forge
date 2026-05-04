@@ -126,7 +126,7 @@ export default {
       if (!token) {
         return Response.json(
           { error: { code: 'UNAUTHENTICATED', message: 'Authorization header with Bearer token required' } },
-          { status: 401 }
+          { status: 401, headers: { 'WWW-Authenticate': `Bearer realm="${env.WORKER_BASE_URL}"` } }
         );
       }
 
@@ -134,7 +134,7 @@ export default {
       if (!session) {
         return Response.json(
           { error: { code: 'UNAUTHENTICATED', message: 'Invalid or expired token. Re-authorize via OAuth.' } },
-          { status: 401 }
+          { status: 401, headers: { 'WWW-Authenticate': `Bearer realm="${env.WORKER_BASE_URL}", error="invalid_token"` } }
         );
       }
 
