@@ -13,10 +13,43 @@ export default {
         issuer: env.WORKER_BASE_URL,
         authorization_endpoint: `${env.WORKER_BASE_URL}/oauth/authorize`,
         token_endpoint: `${env.WORKER_BASE_URL}/oauth/token`,
+        registration_endpoint: `${env.WORKER_BASE_URL}/oauth/register`,
         response_types_supported: ['code'],
         grant_types_supported: ['authorization_code'],
         code_challenge_methods_supported: ['S256'],
+        token_endpoint_auth_methods_supported: ['none'],
       });
+    }
+
+    // ── OAuth: dynamic client registration (RFC 7591) ────────────────────────
+    if (url.pathname === '/oauth/register' && request.method === 'POST') {
+      let body: Record<string, unknown>;
+      try {
+        body = await request.json() as Record<string, unknown>;
+      } catch {
+        return Response.json({ error: 'invalid_client_metadata' }, { status: 400 });
+      }
+
+      const redirectUris = Array.isArray(body.redirect_uris) ? body.redirect_uris as string[] : [];
+      if (redirectUris.length === 0) {
+        return Response.json({ error: 'invalid_client_metadata', error_description: 'redirect_uris required' }, { status: 400 });
+      }
+
+      const clientId = crypto.randomUUID();
+      await env.SESSIONS.put(
+        `client:${clientId}`,
+        JSON.stringify({ redirect_uris: redirectUris, client_name: body.client_name ?? 'MCP Client' }),
+        { expirationTtl: 30 * 24 * 60 * 60 }
+      );
+
+      return Response.json({
+        client_id: clientId,
+        client_name: body.client_name ?? 'MCP Client',
+        redirect_uris: redirectUris,
+        grant_types: ['authorization_code'],
+        response_types: ['code'],
+        token_endpoint_auth_method: 'none',
+      }, { status: 201 });
     }
 
     // ── OAuth: start GitHub auth ─────────────────────────────────────────────
@@ -24,9 +57,22 @@ export default {
       const clientRedirectUri = url.searchParams.get('redirect_uri') ?? '';
       const clientState = url.searchParams.get('state') ?? '';
       const codeChallenge = url.searchParams.get('code_challenge') ?? '';
+      const clientId = url.searchParams.get('client_id') ?? '';
 
       if (!codeChallenge) {
         return new Response('Missing code_challenge (PKCE required)', { status: 400 });
+      }
+
+      // Validate dynamically registered client if client_id provided
+      if (clientId) {
+        const registration = await env.SESSIONS.get(`client:${clientId}`);
+        if (!registration) {
+          return new Response('Unknown client_id', { status: 400 });
+        }
+        const reg = JSON.parse(registration) as { redirect_uris: string[] };
+        if (clientRedirectUri && !reg.redirect_uris.includes(clientRedirectUri)) {
+          return new Response('redirect_uri not registered for this client', { status: 400 });
+        }
       }
 
       const githubState = generateToken();
