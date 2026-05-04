@@ -1,0 +1,21 @@
+# Copy this file to .dev.vars for local development with `wrangler dev`
+# .dev.vars is gitignored — never commit the real values
+#
+# These are injected as secrets in the local Worker runtime.
+# In production, use: npx wrangler secret put <NAME>
+
+# ── Cloud Run backend URLs ────────────────────────────────────────────────────
+PNG2SS_URL=https://png2ss-934861542626.us-central1.run.app
+GIF2SS_URL=https://gif2ss-934861542626.us-central1.run.app
+
+# ── Shared secret between this Worker and both Cloud Run services ─────────────
+# Generate with: openssl rand -hex 32
+# Must match MCP_KEY set on both Cloud Run services
+MCP_KEY=your_mcp_key_here
+
+# ── GitHub OAuth App credentials ──────────────────────────────────────────────
+# Create at: https://github.com/settings/developers → New OAuth App
+# Homepage URL:            https://spritesheet-forge.workers.dev
+# Authorization callback: https://spritesheet-forge.workers.dev/oauth/callback
+GITHUB_CLIENT_ID=your_github_client_id_here
+GITHUB_CLIENT_SECRET=your_github_client_secret_here
