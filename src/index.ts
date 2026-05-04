@@ -119,21 +119,62 @@ export default {
     }
 
     // ── MCP endpoint ──────────────────────────────────────────────────────────
+    if (url.pathname === '/mcp' && request.method === 'GET') {
+      const authHeader = request.headers.get('Authorization') ?? '';
+      const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+      if (!token) {
+        return new Response('Unauthorized', {
+          status: 401,
+          headers: { 'WWW-Authenticate': `Bearer realm="${env.WORKER_BASE_URL}"` },
+        });
+      }
+      const session = await lookupSession(env, token);
+      if (!session) {
+        return new Response('Unauthorized', {
+          status: 401,
+          headers: { 'WWW-Authenticate': `Bearer realm="${env.WORKER_BASE_URL}", error="invalid_token"` },
+        });
+      }
+      const { readable, writable } = new TransformStream();
+      const writer = writable.getWriter();
+      const encoder = new TextEncoder();
+      writer.write(encoder.encode(': keep-alive\n\n'));
+      writer.close();
+      return new Response(readable, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+        },
+      });
+    }
+
     if (url.pathname === '/mcp' && request.method === 'POST') {
+      // Peek at the method to allow unauthenticated handshake methods
+      let body: { method?: string; id?: unknown };
+      try {
+        body = await request.clone().json() as { method?: string; id?: unknown };
+      } catch {
+        return Response.json({ jsonrpc: '2.0', error: { code: -32700, message: 'Parse error' }, id: null }, { status: 400 });
+      }
+
+      const isHandshake = body.method === 'initialize' || body.method === 'notifications/initialized';
+
       const authHeader = request.headers.get('Authorization') ?? '';
       const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
       if (!token) {
+        if (isHandshake) return handleMCPRequest(request, env, '');
         return Response.json(
-          { error: { code: 'UNAUTHENTICATED', message: 'Authorization header with Bearer token required' } },
+          { jsonrpc: '2.0', error: { code: -32001, message: 'Unauthorized' }, id: body.id ?? null },
           { status: 401, headers: { 'WWW-Authenticate': `Bearer realm="${env.WORKER_BASE_URL}"` } }
         );
       }
 
       const session = await lookupSession(env, token);
       if (!session) {
+        if (isHandshake) return handleMCPRequest(request, env, '');
         return Response.json(
-          { error: { code: 'UNAUTHENTICATED', message: 'Invalid or expired token. Re-authorize via OAuth.' } },
+          { jsonrpc: '2.0', error: { code: -32001, message: 'Invalid or expired token' }, id: body.id ?? null },
           { status: 401, headers: { 'WWW-Authenticate': `Bearer realm="${env.WORKER_BASE_URL}", error="invalid_token"` } }
         );
       }
