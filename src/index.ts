@@ -1,7 +1,6 @@
 import type { Env } from './types';
 import { lookupSession, storeOAuthState, getOAuthState, storeAuthCode, consumeAuthCode, exchangeGitHubCode, createSession, generateToken, verifyPKCE } from './auth';
 import { handleMCPRequest } from './mcp';
-import { MCPError } from './errors';
 import { generateOutputKey, uploadToR2, outputUrl, FILE_TTL_MS } from './file-handler';
 
 export default {
@@ -254,23 +253,24 @@ export default {
         return Response.json({ error: 'invalid_request', message: 'Expected multipart/form-data with a "file" field' }, { status: 400 });
       }
 
-      const fileEntry = form.get('file');
-      if (!(fileEntry instanceof File) && !(fileEntry instanceof Blob)) {
+      const rawEntry = form.get('file');
+      if (!rawEntry) {
         return Response.json({ error: 'invalid_request', message: 'Missing "file" field' }, { status: 400 });
       }
+      const fileEntry = rawEntry as unknown as File;
 
       const ALLOWED_TYPES = new Set(['image/png', 'image/gif', 'image/webp']);
-      const contentType = (fileEntry as File).type || '';
+      const contentType = fileEntry.type || '';
       if (!ALLOWED_TYPES.has(contentType)) {
         return Response.json({ error: 'invalid_content_type', message: `Content-Type '${contentType}' not accepted. Expected image/png, image/gif, or image/webp` }, { status: 400 });
       }
 
       const MAX_BYTES = 20 * 1024 * 1024;
-      if ((fileEntry as File).size > MAX_BYTES) {
-        return Response.json({ error: 'file_too_large', message: `File size ${(fileEntry as File).size} exceeds 20 MB limit` }, { status: 400 });
+      if (fileEntry.size > MAX_BYTES) {
+        return Response.json({ error: 'file_too_large', message: `File size ${fileEntry.size} exceeds 20 MB limit` }, { status: 400 });
       }
 
-      const buffer = await (fileEntry as File).arrayBuffer();
+      const buffer = await fileEntry.arrayBuffer();
       const key = generateOutputKey(contentType);
       await uploadToR2(env, key, buffer, contentType);
 
@@ -278,7 +278,7 @@ export default {
         url: outputUrl(env, key),
         expires_at: new Date(Date.now() + FILE_TTL_MS).toISOString(),
         content_type: contentType,
-        size_bytes: (fileEntry as File).size,
+        size_bytes: fileEntry.size,
       }, { status: 201 });
     }
 
@@ -313,79 +313,252 @@ export default {
 
     // ── Landing page ──────────────────────────────────────────────────────────
     if (url.pathname === '/' && (request.method === 'GET' || request.method === 'HEAD')) {
+      const base = env.WORKER_BASE_URL;
       const body = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <title>Spritesheet Forge MCP</title>
 <style>
-  body { font-family: system-ui, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #1a1a1a; }
-  h1 { font-size: 1.6rem; margin-bottom: .25rem; }
-  h2 { font-size: 1.1rem; margin-top: 2rem; border-bottom: 1px solid #eee; padding-bottom: .3rem; }
-  code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-size: .9em; }
-  pre { background: #f4f4f4; padding: 12px 16px; border-radius: 6px; overflow-x: auto; }
-  a { color: #0066cc; }
-  ul { padding-left: 1.4rem; }
-  li { margin: .3rem 0; }
-  .badge { display: inline-block; background: #e8f4e8; color: #2a7a2a; border-radius: 4px; padding: 2px 8px; font-size: .85em; }
+  body{font-family:system-ui,sans-serif;max-width:860px;margin:40px auto;padding:0 20px;color:#1a1a1a;line-height:1.6}
+  h1{font-size:1.7rem;margin-bottom:.2rem}
+  h2{font-size:1.1rem;margin-top:2.2rem;border-bottom:1px solid #e0e0e0;padding-bottom:.35rem;color:#333}
+  h3{font-size:.95rem;margin:1.2rem 0 .4rem;color:#444}
+  code{background:#f4f4f4;padding:2px 6px;border-radius:3px;font-size:.88em}
+  pre{background:#f4f4f4;padding:12px 16px;border-radius:6px;overflow-x:auto;font-size:.88em}
+  a{color:#0066cc}
+  ul,ol{padding-left:1.5rem}
+  li{margin:.3rem 0}
+  table{border-collapse:collapse;width:100%;font-size:.88em;margin:.6rem 0}
+  th{background:#f0f0f0;text-align:left;padding:5px 10px;border:1px solid #ddd}
+  td{padding:4px 10px;border:1px solid #ddd;vertical-align:top}
+  td:first-child code{white-space:nowrap}
+  .badge{display:inline-block;background:#e8f4e8;color:#2a7a2a;border-radius:4px;padding:2px 8px;font-size:.82em}
+  .warn{background:#fff8e1;border-left:3px solid #f9a825;padding:8px 12px;border-radius:0 4px 4px 0;margin:.6rem 0}
+  .tip{background:#e8f4fd;border-left:3px solid #1976d2;padding:8px 12px;border-radius:0 4px 4px 0;margin:.6rem 0}
+  details{margin:.5rem 0}
+  summary{cursor:pointer;font-weight:600;color:#0066cc}
 </style>
 </head>
 <body>
 <h1>Spritesheet Forge MCP <span class="badge">hosted</span></h1>
 <p>A remote <a href="https://modelcontextprotocol.io">Model Context Protocol</a> server for game-dev spritesheet workflows.
-Connect it to Claude or any MCP-compatible AI client to pack, split, trim, and animate sprites through natural language.</p>
-
-<p><strong>GitHub:</strong> <a href="https://github.com/LAXY9887/Game-Dev.-Spritesheet-Forge">LAXY9887/Game-Dev.-Spritesheet-Forge</a><br>
-<strong>MCP endpoint:</strong> <code>${env.WORKER_BASE_URL}/mcp</code></p>
-
-<h2>Available Tools (8)</h2>
-<ul>
-  <li><code>server_info</code> — Runtime config: upload URL, TTL, file size limits, encoding rules</li>
-  <li><code>gif_to_spritesheet</code> — Convert GIF animation into a spritesheet PNG grid</li>
-  <li><code>gif_to_frames</code> — Extract GIF frames as individual PNGs (ZIP)</li>
-  <li><code>spritesheet_to_animation</code> — Slice spritesheet back into animated GIF / WebP</li>
-  <li><code>frames_to_animation</code> — Assemble PNG frames into animated GIF / WebP</li>
-  <li><code>png_to_spritesheet</code> — Merge multiple PNGs into a spritesheet (grid / packed / horizontal / vertical)</li>
-  <li><code>split_spritesheet</code> — Split spritesheet into frames + optional TexturePacker atlas JSON</li>
-  <li><code>trim_png</code> — Crop transparent edges from PNG files</li>
-</ul>
+Connect it to Claude or any MCP-compatible AI client to pack, split, trim, and animate sprites through natural language — no local tools required.</p>
+<p>
+  <strong>MCP endpoint:</strong> <code>${base}/mcp</code> &nbsp;|&nbsp;
+  <strong>GitHub:</strong> <a href="https://github.com/LAXY9887/Game-Dev.-Spritesheet-Forge">LAXY9887/Game-Dev.-Spritesheet-Forge</a>
+</p>
 
 <h2>Quick Start</h2>
-<p><strong>Claude Desktop</strong> — add to <code>claude_desktop_config.json</code>:</p>
+<h3>Claude Desktop</h3>
+<p>Add to <code>claude_desktop_config.json</code>:</p>
 <pre>{
   "mcpServers": {
     "spritesheet-forge": {
       "type": "http",
-      "url": "${env.WORKER_BASE_URL}/mcp"
+      "url": "${base}/mcp"
     }
   }
 }</pre>
-<p><strong>Claude Code (CLI):</strong></p>
-<pre>claude mcp add spritesheet-forge --transport http ${env.WORKER_BASE_URL}/mcp</pre>
-<p>On first use, your MCP client will open a GitHub login page to authorize access.</p>
+<h3>Claude Code (CLI)</h3>
+<pre>claude mcp add spritesheet-forge --transport http ${base}/mcp</pre>
+<p>On first use, your MCP client will open a GitHub login page. Approve access and the session is stored for 30 days — no further action needed.</p>
 
 <h2>Authentication</h2>
-<p>Uses <strong>GitHub OAuth 2.1 with PKCE</strong>. MCP clients handle the flow automatically.
-For manual token acquisition (curl testing, benchmark), run:</p>
-<pre>python3 scripts/get-token.py</pre>
-<p>from the repository root. Discovery endpoint: <a href="${env.WORKER_BASE_URL}/.well-known/oauth-authorization-server"><code>/.well-known/oauth-authorization-server</code></a></p>
+<p>Uses <strong>GitHub OAuth 2.1 with PKCE</strong>. MCP clients (Claude Desktop, Claude Code) run the flow automatically.</p>
+<p><strong>To get a Bearer token manually</strong> (for curl, benchmark scripts, or custom integrations):</p>
+<ol>
+  <li>Clone the repository and run: <code>python3 scripts/get-token.py</code></li>
+  <li>The script registers an OAuth client, opens your browser for GitHub login, and prints the token.</li>
+  <li>Use it as: <code>Authorization: Bearer &lt;token&gt;</code></li>
+</ol>
+<p>Token lifetime: <strong>30 days</strong>. OAuth discovery: <a href="${base}/.well-known/oauth-authorization-server"><code>/.well-known/oauth-authorization-server</code></a></p>
 
 <h2>File Input Rules</h2>
-<ul>
-  <li><strong>&lt; 4 MB:</strong> base64-encode bytes, prepend <code>data:&lt;mime&gt;;base64,</code> — strip ALL whitespace from the base64 string</li>
-  <li><strong>≥ 4 MB:</strong> <code>POST ${env.WORKER_BASE_URL}/upload</code> (multipart/form-data, field <code>file</code>, Bearer token) → pass returned URL</li>
-  <li><strong>Previous tool output:</strong> pass the URL directly — no re-encoding needed</li>
-  <li><strong>Output TTL:</strong> all URLs expire 1 hour after creation</li>
-</ul>
+<div class="tip">Agents: call <code>server_info</code> to get the runtime upload URL, exact TTL, and encoding rules before processing large files.</div>
+<p>All <code>file</code> / <code>files</code> parameters accept three input types:</p>
+<table>
+  <tr><th>Condition</th><th>Method</th></tr>
+  <tr><td>File &lt; 4 MB</td><td>Base64-encode bytes → prepend <code>data:&lt;mime&gt;;base64,</code><br><strong>Strip ALL whitespace and newlines from the base64 string before prepending.</strong> Many encoders (e.g. <code>openssl base64</code>) insert newlines every 76 chars — these cause <code>INVALID_BASE64</code>.</td></tr>
+  <tr><td>File ≥ 4 MB</td><td><code>POST ${base}/upload</code> (multipart/form-data, field <code>file</code>, Bearer token required) → use <code>"url"</code> from response.<br>A 4.7 MB GIF encodes to ~6.3 MB JSON — most MCP clients reject payloads that large.</td></tr>
+  <tr><td>Previous tool output</td><td>Pass the output <code>url</code> directly — server reads from its own storage, no HTTP round-trip.</td></tr>
+</table>
+<div class="warn"><strong>Output TTL:</strong> all output URLs (tools + uploads) expire <strong>1 hour</strong> after creation. Do not cache them across sessions. If a URL is stale, re-run the originating tool.</div>
 
-<h2>Limits</h2>
-<ul>
-  <li>Max file size: 20 MB</li>
-  <li>Free quota: 100 operations / GitHub account / month</li>
-  <li>Session token lifetime: 30 days</li>
-</ul>
+<h2>Tool Output Format</h2>
+<p>Every tool returns a JSON object in <code>content[0].text</code>:</p>
+<pre>{
+  "url": "${base}/output/output-abc123.png",
+  "expires_at": "2026-05-05T13:00:00.000Z",
+  "content_type": "image/png",
+  "size_bytes": 516432,
+  "quota": { "used": 4, "limit": 100, "reset_at": "2026-06-01T00:00:00.000Z" }
+}</pre>
+<p>Pass <code>url</code> directly as <code>file</code> input to the next tool. The output URL is also a direct browser-viewable download link.</p>
 
-<p style="margin-top:3rem;color:#888;font-size:.85em">MIT License &mdash; <a href="https://github.com/LAXY9887/Game-Dev.-Spritesheet-Forge">source on GitHub</a></p>
+<h2>Available Tools</h2>
+
+<h3><code>server_info</code> — Runtime configuration</h3>
+<p>Returns upload URL, TTL, file size limits, and encoding rules. <strong>Call this first</strong> when working with large files or building chained workflows. No parameters required.</p>
+
+<h3><code>gif_to_spritesheet</code> — GIF → spritesheet PNG</h3>
+<table>
+  <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td><code>file</code></td><td>string</td><td>required</td><td>GIF file input</td></tr>
+  <tr><td><code>columns</code></td><td>integer</td><td>auto</td><td>Grid columns</td></tr>
+  <tr><td><code>padding</code></td><td>integer</td><td>0</td><td>Pixel gap between frames</td></tr>
+  <tr><td><code>remove_bg</code></td><td>boolean</td><td>false</td><td>Remove background from each frame</td></tr>
+  <tr><td><code>bg_color</code></td><td>string</td><td>"auto"</td><td>"auto" or "#RRGGBB"</td></tr>
+  <tr><td><code>tolerance</code></td><td>integer</td><td>30</td><td>Background removal threshold 0–255</td></tr>
+</table>
+
+<h3><code>gif_to_frames</code> — GIF → individual PNGs (ZIP)</h3>
+<table>
+  <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td><code>file</code></td><td>string</td><td>required</td><td>GIF file input</td></tr>
+  <tr><td><code>remove_bg</code></td><td>boolean</td><td>false</td><td>Remove background</td></tr>
+  <tr><td><code>bg_color</code></td><td>string</td><td>"auto"</td><td>"auto" or "#RRGGBB"</td></tr>
+  <tr><td><code>tolerance</code></td><td>integer</td><td>30</td><td>Background removal threshold 0–255</td></tr>
+</table>
+
+<h3><code>spritesheet_to_animation</code> — Spritesheet PNG → animated GIF/WebP</h3>
+<p>Grid mode: provide <code>columns</code> + <code>rows</code>. Cell mode: provide <code>cell_width</code> + <code>cell_height</code>.</p>
+<table>
+  <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td><code>file</code></td><td>string</td><td>required</td><td>Spritesheet PNG input</td></tr>
+  <tr><td><code>columns</code></td><td>integer</td><td>—</td><td>Grid columns</td></tr>
+  <tr><td><code>rows</code></td><td>integer</td><td>—</td><td>Grid rows</td></tr>
+  <tr><td><code>cell_width</code></td><td>integer</td><td>—</td><td>Cell width px (cell mode)</td></tr>
+  <tr><td><code>cell_height</code></td><td>integer</td><td>—</td><td>Cell height px (cell mode)</td></tr>
+  <tr><td><code>frame_count</code></td><td>integer</td><td>—</td><td>Actual frames (for incomplete last row)</td></tr>
+  <tr><td><code>padding</code></td><td>integer</td><td>0</td><td>Pixel gap between cells</td></tr>
+  <tr><td><code>column_range</code></td><td>string</td><td>—</td><td>e.g. "0-5" or "2"</td></tr>
+  <tr><td><code>row_range</code></td><td>string</td><td>—</td><td>e.g. "0-3"</td></tr>
+  <tr><td><code>skip_empty</code></td><td>boolean</td><td>true</td><td>Remove fully transparent frames</td></tr>
+  <tr><td><code>trim_top/right/bottom/left</code></td><td>integer</td><td>0</td><td>Per-edge trim offsets</td></tr>
+  <tr><td><code>duration</code></td><td>integer</td><td>100</td><td>Frame duration in ms</td></tr>
+  <tr><td><code>loop</code></td><td>integer</td><td>0</td><td>Loop count (0 = infinite)</td></tr>
+  <tr><td><code>output_format</code></td><td>string</td><td>"gif"</td><td>"gif" | "webp"</td></tr>
+  <tr><td><code>quality</code></td><td>integer</td><td>80</td><td>WebP quality 0–100</td></tr>
+  <tr><td><code>lossless</code></td><td>boolean</td><td>false</td><td>WebP lossless mode</td></tr>
+</table>
+
+<h3><code>frames_to_animation</code> — PNG frames → animated GIF/WebP</h3>
+<table>
+  <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td><code>files</code></td><td>string[]</td><td>required</td><td>PNG frames</td></tr>
+  <tr><td><code>duration</code></td><td>integer</td><td>100</td><td>Frame duration ms (10–10000)</td></tr>
+  <tr><td><code>loop</code></td><td>integer</td><td>0</td><td>Loop count (0 = infinite)</td></tr>
+  <tr><td><code>file_name_order</code></td><td>boolean</td><td>false</td><td>Sort by _N filename suffix</td></tr>
+  <tr><td><code>resize</code></td><td>string</td><td>"transparent"</td><td>"error" | "fill" | "transparent"</td></tr>
+  <tr><td><code>bg_fill_color</code></td><td>string</td><td>"#000000"</td><td>Fill color when resize=fill</td></tr>
+  <tr><td><code>output_format</code></td><td>string</td><td>"gif"</td><td>"gif" | "webp"</td></tr>
+  <tr><td><code>quality</code></td><td>integer</td><td>80</td><td>WebP quality 0–100</td></tr>
+  <tr><td><code>lossless</code></td><td>boolean</td><td>false</td><td>WebP lossless mode</td></tr>
+</table>
+
+<h3><code>png_to_spritesheet</code> — Multiple PNGs → spritesheet</h3>
+<table>
+  <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td><code>files</code></td><td>string[]</td><td>required</td><td>PNG files</td></tr>
+  <tr><td><code>layout</code></td><td>string</td><td>"grid"</td><td>"grid" | "horizontal" | "vertical" | "packed"</td></tr>
+  <tr><td><code>columns</code></td><td>integer</td><td>auto</td><td>Grid columns</td></tr>
+  <tr><td><code>cell_mode</code></td><td>string</td><td>"auto_max"</td><td>"auto_max" | "auto_uniform" | "fixed"</td></tr>
+  <tr><td><code>cell_width</code></td><td>integer</td><td>—</td><td>Required when cell_mode=fixed</td></tr>
+  <tr><td><code>cell_height</code></td><td>integer</td><td>—</td><td>Required when cell_mode=fixed</td></tr>
+  <tr><td><code>fit_mode</code></td><td>string</td><td>—</td><td>"scale_fit" | "scale_fill" | "error"</td></tr>
+  <tr><td><code>align</code></td><td>string</td><td>—</td><td>"center" | "top_left"</td></tr>
+  <tr><td><code>padding</code></td><td>integer</td><td>0</td><td>Pixel gap between frames</td></tr>
+  <tr><td><code>bg_color</code></td><td>string</td><td>"transparent"</td><td>"transparent" or "#RRGGBB"</td></tr>
+  <tr><td><code>power_of_2</code></td><td>boolean</td><td>false</td><td>Pad output to next power of 2</td></tr>
+  <tr><td><code>file_name_order</code></td><td>boolean</td><td>false</td><td>Sort by _N filename suffix</td></tr>
+  <tr><td><code>trim_input</code></td><td>boolean</td><td>false</td><td>Auto-trim transparent edges before packing</td></tr>
+  <tr><td><code>extrude</code></td><td>integer</td><td>0</td><td>Extrude outermost pixels by N px per frame</td></tr>
+  <tr><td><code>metadata_format</code></td><td>string</td><td>"none"</td><td>"none" | "json_array" | "json_hash" | "css" — required (non-none) for layout=packed</td></tr>
+</table>
+
+<h3><code>split_spritesheet</code> — Spritesheet → frames + atlas JSON</h3>
+<p>Grid mode: provide <code>columns</code> + <code>rows</code>. Cell mode: provide <code>cell_width</code> + <code>cell_height</code>.</p>
+<table>
+  <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td><code>file</code></td><td>string</td><td>required</td><td>Spritesheet PNG input</td></tr>
+  <tr><td><code>columns</code></td><td>integer</td><td>—</td><td>Grid columns</td></tr>
+  <tr><td><code>rows</code></td><td>integer</td><td>—</td><td>Grid rows</td></tr>
+  <tr><td><code>cell_width</code></td><td>integer</td><td>—</td><td>Cell width px (cell mode)</td></tr>
+  <tr><td><code>cell_height</code></td><td>integer</td><td>—</td><td>Cell height px (cell mode)</td></tr>
+  <tr><td><code>padding</code></td><td>integer</td><td>0</td><td>Pixel gap between cells</td></tr>
+  <tr><td><code>frame_count</code></td><td>integer</td><td>—</td><td>Actual frames for incomplete last row</td></tr>
+  <tr><td><code>column_range</code></td><td>string</td><td>—</td><td>e.g. "0-5" or "2"</td></tr>
+  <tr><td><code>row_range</code></td><td>string</td><td>—</td><td>e.g. "0-3"</td></tr>
+  <tr><td><code>skip_empty</code></td><td>boolean</td><td>true</td><td>Remove fully transparent frames</td></tr>
+  <tr><td><code>trim_top/right/bottom/left</code></td><td>integer</td><td>0</td><td>Per-edge trim offsets</td></tr>
+  <tr><td><code>output</code></td><td>string</td><td>"frames"</td><td>"frames" | "metadata" | "both"</td></tr>
+  <tr><td><code>metadata_format</code></td><td>string</td><td>—</td><td>"json_array" | "json_hash" | "css"</td></tr>
+</table>
+
+<h3><code>trim_png</code> — Crop transparent edges</h3>
+<table>
+  <tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td><code>files</code></td><td>string[]</td><td>required</td><td>PNG files (single → PNG, multiple → ZIP)</td></tr>
+  <tr><td><code>threshold</code></td><td>integer</td><td>0</td><td>Alpha threshold 0–255. Pixels ≤ threshold are trimmed.</td></tr>
+  <tr><td><code>padding</code></td><td>integer</td><td>0</td><td>Transparent margin to preserve around content</td></tr>
+</table>
+
+<h2>Agent Workflow Guide</h2>
+<div class="tip"><strong>Recommended context to give an agent:</strong> "I've connected Spritesheet Forge MCP. For files ≥ 4 MB, call <code>server_info</code> first to get the upload URL, then POST the file there before calling the processing tool. Output URLs expire in 1 hour."</div>
+
+<h3>Chaining tool outputs</h3>
+<p>Pass the <code>url</code> from one tool directly as <code>file</code> input to the next — no re-encoding needed. Example chain:</p>
+<pre>gif_to_spritesheet → split_spritesheet → frames_to_animation</pre>
+<p>The server reads chained URLs directly from its own storage with no HTTP overhead.</p>
+
+<h3>Token for the upload endpoint</h3>
+<p>The upload endpoint requires a Bearer token. MCP clients hold this token internally — the user can find it in their client settings or logs. Alternatively, run <code>python3 scripts/get-token.py</code> from the repository root. If the user cannot provide a token, ask them to supply the file as a public HTTPS URL instead.</p>
+
+<h3>TTL in long workflows</h3>
+<p>All output URLs expire <strong>1 hour</strong> after creation. If a multi-step workflow spans more than one hour, re-run the step that produced the stale URL rather than retrying with it.</p>
+
+<h2>Limits &amp; Quotas</h2>
+<table>
+  <tr><th>Limit</th><th>Value</th></tr>
+  <tr><td>Max file size</td><td>20 MB</td></tr>
+  <tr><td>Recommended base64 limit</td><td>4 MB (use upload endpoint above this)</td></tr>
+  <tr><td>Output / upload file TTL</td><td>1 hour</td></tr>
+  <tr><td>Free quota</td><td>100 operations / GitHub account / month</td></tr>
+  <tr><td>Quota reset</td><td>1st of each month</td></tr>
+  <tr><td>Session token lifetime</td><td>30 days</td></tr>
+  <tr><td>Supported input formats</td><td>PNG, GIF, WebP</td></tr>
+</table>
+
+<h2>Common Errors</h2>
+<details>
+  <summary>INVALID_BASE64</summary>
+  <p>The base64 string contains whitespace or newlines. Strip them before prepending the data URI: <code>base64 -i file.gif | tr -d '\\n'</code>, or in Python: <code>base64.b64encode(data).decode()</code> (no newlines by default).</p>
+</details>
+<details>
+  <summary>INVALID_FILE_URL — File not found or expired</summary>
+  <p>The output URL has passed its 1-hour TTL. Re-run the tool that produced it to get a fresh URL.</p>
+</details>
+<details>
+  <summary>INVALID_CONTENT_TYPE</summary>
+  <p>Only PNG, GIF, and WebP are accepted as input. JPEG and other formats are not supported.</p>
+</details>
+<details>
+  <summary>FILE_TOO_LARGE</summary>
+  <p>The file exceeds the 20 MB limit. Split or compress the file before uploading.</p>
+</details>
+<details>
+  <summary>quota_exceeded</summary>
+  <p>You have used all 100 free operations for this month. Quota resets on the 1st. Check <code>quota.reset_at</code> in any tool response for the exact reset time.</p>
+</details>
+<details>
+  <summary>Upload returns 401 Unauthorized</summary>
+  <p>The Bearer token is missing or invalid. Obtain a token via <code>python3 scripts/get-token.py</code> or by connecting through an MCP client.</p>
+</details>
+
+<p style="margin-top:3rem;color:#999;font-size:.85em">
+  <a href="https://github.com/LAXY9887/Game-Dev.-Spritesheet-Forge">GitHub</a> &mdash; MIT License
+</p>
 </body>
 </html>`;
       return new Response(body, {
