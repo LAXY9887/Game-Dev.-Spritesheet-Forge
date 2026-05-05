@@ -2,6 +2,7 @@ import type { Env } from './types';
 import { lookupSession, storeOAuthState, getOAuthState, storeAuthCode, consumeAuthCode, exchangeGitHubCode, createSession, generateToken, verifyPKCE } from './auth';
 import { handleMCPRequest } from './mcp';
 import { MCPError } from './errors';
+import { generateOutputKey, uploadToR2, outputUrl, FILE_TTL_MS } from './file-handler';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -228,8 +229,61 @@ export default {
       return handleMCPRequest(request, env, session.userId);
     }
 
+    // ── File upload ───────────────────────────────────────────────────────────
+    if (url.pathname === '/upload' && request.method === 'POST') {
+      const authHeader = request.headers.get('Authorization') ?? '';
+      const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+      if (!token) {
+        return new Response('Unauthorized', {
+          status: 401,
+          headers: { 'WWW-Authenticate': `Bearer realm="${env.WORKER_BASE_URL}"` },
+        });
+      }
+      const session = await lookupSession(env, token);
+      if (!session) {
+        return new Response('Unauthorized', {
+          status: 401,
+          headers: { 'WWW-Authenticate': `Bearer realm="${env.WORKER_BASE_URL}", error="invalid_token"` },
+        });
+      }
+
+      let form: FormData;
+      try {
+        form = await request.formData();
+      } catch {
+        return Response.json({ error: 'invalid_request', message: 'Expected multipart/form-data with a "file" field' }, { status: 400 });
+      }
+
+      const fileEntry = form.get('file');
+      if (!(fileEntry instanceof File) && !(fileEntry instanceof Blob)) {
+        return Response.json({ error: 'invalid_request', message: 'Missing "file" field' }, { status: 400 });
+      }
+
+      const ALLOWED_TYPES = new Set(['image/png', 'image/gif', 'image/webp']);
+      const contentType = (fileEntry as File).type || '';
+      if (!ALLOWED_TYPES.has(contentType)) {
+        return Response.json({ error: 'invalid_content_type', message: `Content-Type '${contentType}' not accepted. Expected image/png, image/gif, or image/webp` }, { status: 400 });
+      }
+
+      const MAX_BYTES = 20 * 1024 * 1024;
+      if ((fileEntry as File).size > MAX_BYTES) {
+        return Response.json({ error: 'file_too_large', message: `File size ${(fileEntry as File).size} exceeds 20 MB limit` }, { status: 400 });
+      }
+
+      const buffer = await (fileEntry as File).arrayBuffer();
+      const key = generateOutputKey(contentType);
+      await uploadToR2(env, key, buffer, contentType);
+
+      return Response.json({
+        url: outputUrl(env, key),
+        expires_at: new Date(Date.now() + FILE_TTL_MS).toISOString(),
+        content_type: contentType,
+        size_bytes: (fileEntry as File).size,
+      }, { status: 201 });
+    }
+
     // ── R2 output file serving ────────────────────────────────────────────────
-    if (url.pathname.startsWith('/output/') && request.method === 'GET') {
+    if (url.pathname.startsWith('/output/') && (request.method === 'GET' || request.method === 'HEAD')) {
       const key = url.pathname.slice('/output/'.length);
       if (!key) return new Response('Not found', { status: 404 });
 
@@ -246,8 +300,8 @@ export default {
       return new Response(obj.body, {
         headers: {
           'Content-Type': obj.httpMetadata?.contentType ?? 'application/octet-stream',
-          'Cache-Control': 'private, max-age=86400',
-          'Content-Disposition': `${contentType.startsWith('image/') ? 'inline' : 'attachment'}; filename="${key}"`,
+          'Cache-Control': 'private, max-age=3600',
+          'Content-Disposition': `${(obj.httpMetadata?.contentType ?? '').startsWith('image/') ? 'inline' : 'attachment'}; filename="${key}"`,
         },
       });
     }
@@ -258,5 +312,25 @@ export default {
     }
 
     return new Response('Not found', { status: 404 });
+  },
+
+  async scheduled(_event: ScheduledEvent, env: Env, _ctx: ExecutionContext): Promise<void> {
+    const now = new Date();
+    let cursor: string | undefined;
+    let deleted = 0;
+
+    do {
+      const listed = await env.SPRITESHEET_OUTPUT.list({ cursor, limit: 1000 });
+      for (const obj of listed.objects) {
+        const expiresAt = obj.customMetadata?.expiresAt;
+        if (expiresAt && new Date(expiresAt) < now) {
+          await env.SPRITESHEET_OUTPUT.delete(obj.key);
+          deleted++;
+        }
+      }
+      cursor = listed.truncated ? listed.cursor : undefined;
+    } while (cursor);
+
+    console.log(`R2 cleanup: deleted ${deleted} expired objects`);
   },
 };

@@ -18,3 +18,6 @@ bucket_name = "spritesheet-forge-output"
 [vars]
 WORKER_BASE_URL = "https://mcp.clawstudiouo.com"
 FREE_QUOTA_LIMIT = "100"
+
+[triggers]
+crons = ["0 */2 * * *"]

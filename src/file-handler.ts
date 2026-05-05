@@ -3,6 +3,7 @@ import { validateUrl } from './ssrf-guard';
 import type { Env } from './types';
 
 const MAX_SINGLE_FILE_BYTES = 20 * 1024 * 1024; // 20 MB
+export const FILE_TTL_MS = 60 * 60 * 1000; // 1 hour
 const ALLOWED_CONTENT_TYPES = new Set([
   'image/png',
   'image/gif',
@@ -34,14 +35,40 @@ export function outputUrl(env: Pick<Env, 'WORKER_BASE_URL'>, key: string): strin
   return `${env.WORKER_BASE_URL}/output/${key}`;
 }
 
-export async function resolveFileInput(input: string, _env: Env): Promise<ResolvedFile> {
+export async function resolveFileInput(input: string, env: Env): Promise<ResolvedFile> {
   if (input.startsWith('data:')) {
     return decodeDataUri(input);
+  }
+  // Own-domain output URLs: read directly from R2 to skip HTTP round-trip
+  const ownPrefix = `${env.WORKER_BASE_URL}/output/`;
+  if (input.startsWith(ownPrefix)) {
+    return readFromR2(input.slice(ownPrefix.length), env);
   }
   if (input.startsWith('https://') || input.startsWith('http://')) {
     return downloadUrl(input);
   }
   throw new MCPError('INVALID_FILE_INPUT', 'File input must be an HTTPS URL or a base64 data URI (data:image/...;base64,...)');
+}
+
+async function readFromR2(key: string, env: Env): Promise<ResolvedFile> {
+  const obj = await env.SPRITESHEET_OUTPUT.get(key);
+  if (!obj) {
+    throw new MCPError('INVALID_FILE_URL', `Output file not found: ${key}`);
+  }
+  const expiresAt = obj.customMetadata?.expiresAt;
+  if (expiresAt && new Date(expiresAt) < new Date()) {
+    await env.SPRITESHEET_OUTPUT.delete(key);
+    throw new MCPError('INVALID_FILE_URL', 'Output file has expired');
+  }
+  const contentType = obj.httpMetadata?.contentType ?? '';
+  if (!ALLOWED_CONTENT_TYPES.has(contentType)) {
+    throw new MCPError('INVALID_CONTENT_TYPE', `Content-Type '${contentType}' is not accepted. Expected image/png, image/gif, or image/webp`);
+  }
+  const buffer = await obj.arrayBuffer();
+  if (buffer.byteLength > MAX_SINGLE_FILE_BYTES) {
+    throw new MCPError('FILE_TOO_LARGE', `File size ${buffer.byteLength} exceeds 20 MB limit`);
+  }
+  return { blob: new Blob([buffer], { type: contentType }), contentType };
 }
 
 function decodeDataUri(dataUri: string): ResolvedFile {
@@ -52,7 +79,7 @@ function decodeDataUri(dataUri: string): ResolvedFile {
   const [, mimeType, b64] = match;
   let binary: ArrayBuffer;
   try {
-    const binaryStr = atob(b64);
+    const binaryStr = atob(b64.replace(/\s/g, ''));
     const bytes = new Uint8Array(binaryStr.length);
     for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
     binary = bytes.buffer;
@@ -119,7 +146,7 @@ export async function uploadToR2(
   body: ArrayBuffer,
   contentType: string
 ): Promise<void> {
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  const expiresAt = new Date(Date.now() + FILE_TTL_MS).toISOString();
   await env.SPRITESHEET_OUTPUT.put(key, body, {
     httpMetadata: { contentType },
     customMetadata: { expiresAt },

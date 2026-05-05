@@ -1,5 +1,5 @@
 import { toolRegistry } from './index';
-import { resolveFileInput, generateOutputKey, uploadToR2, outputUrl } from '../file-handler';
+import { resolveFileInput, generateOutputKey, uploadToR2, outputUrl, FILE_TTL_MS } from '../file-handler';
 import { checkQuota, incrementQuota, getQuotaStatus } from '../quota';
 import { MCPError } from '../errors';
 import type { Env, ToolResult } from '../types';
@@ -42,7 +42,7 @@ async function storeAndReturn(env: Env, body: ArrayBuffer, contentType: string, 
   const quota = await getQuotaStatus(env, userId);
   return {
     url: outputUrl(env, key),
-    expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    expires_at: new Date(Date.now() + FILE_TTL_MS).toISOString(),
     content_type: contentType,
     size_bytes: body.byteLength,
     quota,
@@ -55,7 +55,7 @@ toolRegistry.register({
   inputSchema: {
     type: 'object',
     properties: {
-      file: { type: 'string', description: 'GIF as HTTPS URL or base64 data URI (data:image/gif;base64,...)' },
+      file: { type: 'string', description: 'GIF file — HTTPS URL or data URI. URLs returned by previous tool calls work directly. To encode a local file under 4 MB: base64-encode its bytes and prepend "data:image/gif;base64," (strip any newlines). For files larger than 4 MB, upload first via POST /upload (multipart/form-data, field "file", same Bearer token) and pass the returned URL.' },
       columns: { type: 'integer', description: 'Grid columns. Auto-calculated if omitted.' },
       padding: { type: 'integer', description: 'Pixel gap between frames. Default: 0' },
       remove_bg: { type: 'boolean', description: 'Remove background from each frame. Default: false' },
@@ -78,7 +78,7 @@ toolRegistry.register({
   inputSchema: {
     type: 'object',
     properties: {
-      file: { type: 'string', description: 'GIF as HTTPS URL or base64 data URI' },
+      file: { type: 'string', description: 'GIF file — HTTPS URL or data URI. URLs returned by previous tool calls work directly. To encode a local file under 4 MB: base64-encode its bytes and prepend "data:image/gif;base64," (strip any newlines). For files larger than 4 MB, upload first via POST /upload (multipart/form-data, field "file", same Bearer token) and pass the returned URL.' },
       remove_bg: { type: 'boolean', description: 'Remove background from each frame. Default: false' },
       bg_color: { type: 'string', description: '"auto" or hex "#RRGGBB"' },
       tolerance: { type: 'integer', description: 'Background removal threshold 0-255. Default: 30' },
@@ -99,7 +99,7 @@ toolRegistry.register({
   inputSchema: {
     type: 'object',
     properties: {
-      files: { type: 'array', items: { type: 'string' }, description: 'PNG frames as HTTPS URLs or base64 data URIs' },
+      files: { type: 'array', items: { type: 'string' }, description: 'PNG frames — HTTPS URLs or data URIs. URLs returned by previous tool calls work directly. To encode a local file under 4 MB: base64-encode its bytes and prepend "data:image/png;base64," (strip any newlines). For files larger than 4 MB, upload first via POST /upload (multipart/form-data, field "file", same Bearer token) and pass the returned URL.' },
       duration: { type: 'integer', description: 'Frame duration in ms (10-10000). Default: 100' },
       loop: { type: 'integer', description: 'Loop count. 0 = infinite. Default: 0' },
       file_name_order: { type: 'boolean', description: 'Sort by _N filename suffix. Default: false' },
@@ -125,7 +125,7 @@ toolRegistry.register({
   inputSchema: {
     type: 'object',
     properties: {
-      file: { type: 'string', description: 'Spritesheet PNG as HTTPS URL or base64 data URI' },
+      file: { type: 'string', description: 'Spritesheet PNG — HTTPS URL or data URI. URLs returned by previous tool calls work directly. To encode a local file under 4 MB: base64-encode its bytes and prepend "data:image/png;base64," (strip any newlines). For files larger than 4 MB, upload first via POST /upload (multipart/form-data, field "file", same Bearer token) and pass the returned URL.' },
       columns: { type: 'integer', description: 'Grid columns (grid mode)' },
       rows: { type: 'integer', description: 'Grid rows (grid mode)' },
       cell_width: { type: 'integer', description: 'Cell width in px (cell mode)' },

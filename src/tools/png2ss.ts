@@ -1,5 +1,5 @@
 import { toolRegistry } from './index';
-import { resolveFileInput, generateOutputKey, uploadToR2, outputUrl } from '../file-handler';
+import { resolveFileInput, generateOutputKey, uploadToR2, outputUrl, FILE_TTL_MS } from '../file-handler';
 import { checkQuota, incrementQuota, getQuotaStatus } from '../quota';
 import { MCPError } from '../errors';
 import type { Env, ToolResult } from '../types';
@@ -54,7 +54,7 @@ async function storeAndReturn(
   await uploadToR2(env, key, body, contentType);
   await incrementQuota(env, userId);
   const quota = await getQuotaStatus(env, userId);
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  const expiresAt = new Date(Date.now() + FILE_TTL_MS).toISOString();
   return {
     url: outputUrl(env, key),
     expires_at: expiresAt,
@@ -70,7 +70,7 @@ toolRegistry.register({
   inputSchema: {
     type: 'object',
     properties: {
-      files: { type: 'array', items: { type: 'string' }, description: 'PNG files as HTTPS URLs or base64 data URIs (data:image/png;base64,...)' },
+      files: { type: 'array', items: { type: 'string' }, description: 'PNG files — HTTPS URLs or data URIs. URLs returned by previous tool calls work directly. To encode a local file under 4 MB: base64-encode its bytes and prepend "data:image/png;base64," (strip any newlines). For files larger than 4 MB, upload first via POST /upload (multipart/form-data, field "file", same Bearer token) and pass the returned URL.' },
       layout: { type: 'string', enum: ['grid', 'horizontal', 'vertical', 'packed'], description: 'Frame arrangement. Default: grid' },
       columns: { type: 'integer', description: 'Grid columns. Auto-calculated if omitted.' },
       cell_mode: { type: 'string', enum: ['auto_max', 'auto_uniform', 'fixed'], description: 'Cell sizing mode. Default: auto_max' },
@@ -102,7 +102,7 @@ toolRegistry.register({
   inputSchema: {
     type: 'object',
     properties: {
-      file: { type: 'string', description: 'Spritesheet PNG as HTTPS URL or base64 data URI' },
+      file: { type: 'string', description: 'Spritesheet PNG — HTTPS URL or data URI. URLs returned by previous tool calls work directly. To encode a local file under 4 MB: base64-encode its bytes and prepend "data:image/png;base64," (strip any newlines). For files larger than 4 MB, upload first via POST /upload (multipart/form-data, field "file", same Bearer token) and pass the returned URL.' },
       columns: { type: 'integer', description: 'Grid columns (grid mode)' },
       rows: { type: 'integer', description: 'Grid rows (grid mode)' },
       cell_width: { type: 'integer', description: 'Cell width in px (cell mode)' },
@@ -135,7 +135,7 @@ toolRegistry.register({
   inputSchema: {
     type: 'object',
     properties: {
-      files: { type: 'array', items: { type: 'string' }, description: 'PNG files as HTTPS URLs or base64 data URIs' },
+      files: { type: 'array', items: { type: 'string' }, description: 'PNG files — HTTPS URLs or data URIs. URLs returned by previous tool calls work directly. To encode a local file under 4 MB: base64-encode its bytes and prepend "data:image/png;base64," (strip any newlines). For files larger than 4 MB, upload first via POST /upload (multipart/form-data, field "file", same Bearer token) and pass the returned URL.' },
       threshold: { type: 'integer', description: 'Alpha threshold 0-255. Pixels with alpha ≤ threshold are trimmed. Default: 0' },
       padding: { type: 'integer', description: 'Transparent margin to preserve around trimmed content. Default: 0' },
     },
