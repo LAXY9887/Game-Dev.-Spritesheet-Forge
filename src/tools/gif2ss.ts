@@ -55,7 +55,7 @@ toolRegistry.register({
   inputSchema: {
     type: 'object',
     properties: {
-      file: { type: 'string', description: 'GIF file — HTTPS URL or data URI. URLs returned by previous tool calls work directly. To encode a local file under 4 MB: base64-encode its bytes and prepend "data:image/gif;base64," (strip any newlines). For files larger than 4 MB, upload first via POST /upload (multipart/form-data, field "file", same Bearer token) and pass the returned URL.' },
+      file: { type: 'string', description: 'GIF file — HTTPS URL, data URI, or output URL from a previous tool call (pass directly, no re-encoding needed). For local files < 4 MB: base64-encode the bytes and prepend "data:image/gif;base64," — you MUST strip ALL whitespace and newlines from the base64 string before prepending. For files ≥ 4 MB: call server_info to get the upload_url, POST the file there (multipart/form-data, field "file", Bearer token), and pass the returned URL.' },
       columns: { type: 'integer', description: 'Grid columns. Auto-calculated if omitted.' },
       padding: { type: 'integer', description: 'Pixel gap between frames. Default: 0' },
       remove_bg: { type: 'boolean', description: 'Remove background from each frame. Default: false' },
@@ -78,7 +78,7 @@ toolRegistry.register({
   inputSchema: {
     type: 'object',
     properties: {
-      file: { type: 'string', description: 'GIF file — HTTPS URL or data URI. URLs returned by previous tool calls work directly. To encode a local file under 4 MB: base64-encode its bytes and prepend "data:image/gif;base64," (strip any newlines). For files larger than 4 MB, upload first via POST /upload (multipart/form-data, field "file", same Bearer token) and pass the returned URL.' },
+      file: { type: 'string', description: 'GIF file — HTTPS URL, data URI, or output URL from a previous tool call (pass directly, no re-encoding needed). For local files < 4 MB: base64-encode the bytes and prepend "data:image/gif;base64," — you MUST strip ALL whitespace and newlines from the base64 string before prepending. For files ≥ 4 MB: call server_info to get the upload_url, POST the file there (multipart/form-data, field "file", Bearer token), and pass the returned URL.' },
       remove_bg: { type: 'boolean', description: 'Remove background from each frame. Default: false' },
       bg_color: { type: 'string', description: '"auto" or hex "#RRGGBB"' },
       tolerance: { type: 'integer', description: 'Background removal threshold 0-255. Default: 30' },
@@ -99,7 +99,7 @@ toolRegistry.register({
   inputSchema: {
     type: 'object',
     properties: {
-      files: { type: 'array', items: { type: 'string' }, description: 'PNG frames — HTTPS URLs or data URIs. URLs returned by previous tool calls work directly. To encode a local file under 4 MB: base64-encode its bytes and prepend "data:image/png;base64," (strip any newlines). For files larger than 4 MB, upload first via POST /upload (multipart/form-data, field "file", same Bearer token) and pass the returned URL.' },
+      files: { type: 'array', items: { type: 'string' }, description: 'PNG frames — HTTPS URLs, data URIs, or output URLs from previous tool calls (pass directly, no re-encoding needed). For local files < 4 MB each: base64-encode the bytes and prepend "data:image/png;base64," — you MUST strip ALL whitespace and newlines from the base64 string before prepending. For files ≥ 4 MB each: call server_info to get the upload_url, POST the file there (multipart/form-data, field "file", Bearer token), and pass the returned URL.' },
       duration: { type: 'integer', description: 'Frame duration in ms (10-10000). Default: 100' },
       loop: { type: 'integer', description: 'Loop count. 0 = infinite. Default: 0' },
       file_name_order: { type: 'boolean', description: 'Sort by _N filename suffix. Default: false' },
@@ -125,7 +125,7 @@ toolRegistry.register({
   inputSchema: {
     type: 'object',
     properties: {
-      file: { type: 'string', description: 'Spritesheet PNG — HTTPS URL or data URI. URLs returned by previous tool calls work directly. To encode a local file under 4 MB: base64-encode its bytes and prepend "data:image/png;base64," (strip any newlines). For files larger than 4 MB, upload first via POST /upload (multipart/form-data, field "file", same Bearer token) and pass the returned URL.' },
+      file: { type: 'string', description: 'Spritesheet PNG — HTTPS URL, data URI, or output URL from a previous tool call (pass directly, no re-encoding needed). For local files < 4 MB: base64-encode the bytes and prepend "data:image/png;base64," — you MUST strip ALL whitespace and newlines from the base64 string before prepending. For files ≥ 4 MB: call server_info to get the upload_url, POST the file there (multipart/form-data, field "file", Bearer token), and pass the returned URL.' },
       columns: { type: 'integer', description: 'Grid columns (grid mode)' },
       rows: { type: 'integer', description: 'Grid rows (grid mode)' },
       cell_width: { type: 'integer', description: 'Cell width in px (cell mode)' },

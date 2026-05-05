@@ -1,5 +1,6 @@
 import { toolRegistry } from './tools/index';
 // Side-effect imports to register all tools
+import './tools/server-info';
 import './tools/png2ss';
 import './tools/gif2ss';
 import { MCPError, formatError } from './errors';

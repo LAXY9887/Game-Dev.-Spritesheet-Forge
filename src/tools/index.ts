@@ -1,5 +1,4 @@
 import type { Env } from '../types';
-import type { ToolResult } from '../types';
 
 export interface Tool {
   name: string;
@@ -9,7 +8,7 @@ export interface Tool {
     properties: Record<string, unknown>;
     required?: string[];
   };
-  handler: (args: Record<string, unknown>, env: Env, userId: string) => Promise<ToolResult>;
+  handler: (args: Record<string, unknown>, env: Env, userId: string) => Promise<unknown>;
 }
 
 class ToolRegistry {
