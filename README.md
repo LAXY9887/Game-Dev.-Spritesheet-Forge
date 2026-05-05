@@ -547,8 +547,4 @@ npm run deploy
 
 You will also need the two Cloud Run backend services (`gif2ss` and `png2ss`) running. See the backend repositories for setup instructions.
 
----
 
-## License
-
-[MIT](LICENSE)
