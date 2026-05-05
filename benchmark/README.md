@@ -90,10 +90,34 @@ Results are automatically saved to `benchmark/results/YYYY-MM-DD.txt`.
 
 ---
 
-## Sample Output
+## Results — 2026-05-05
 
 A committed reference run is available in [`sample/2026-05-05.txt`](sample/2026-05-05.txt).
-Output URLs in the sample have expired (1-hour TTL) and are included for format reference only.
+Output URLs have expired (1-hour TTL) and are included for format reference only.
+
+### Phase 1 — Tool Coverage
+
+| Tool | Time |
+|------|-----:|
+| `gif_to_spritesheet` | 3580 ms |
+| `gif_to_frames` | 3092 ms |
+| `split_spritesheet` (3×2, frames + atlas JSON) | 6362 ms |
+| `spritesheet_to_animation` (3×2 → animated GIF) | 3236 ms |
+| `trim_png` | 2872 ms |
+| `png_to_spritesheet` (2-image horizontal) | 3732 ms |
+| `frames_to_animation` (2 frames → GIF) | 4408 ms |
+
+### Phase 2 — Upload vs Base64 Efficiency
+
+| Method | Fixture | Upload | Tool call | Total |
+|--------|---------|-------:|----------:|------:|
+| Direct base64 | smol.gif 221 KB | — | 3182 ms | **3182 ms** |
+| Upload + URL | smol.gif 221 KB | 597 ms | 2832 ms | **3429 ms** |
+| Upload + URL | beeg.gif 4.7 MB | 1908 ms | 10676 ms | **12584 ms** |
+
+> beeg.gif total time is dominated by Cloud Run processing 126 frames into a 12-column spritesheet, not by the upload itself.
+
+### Full console output
 
 ```
 spritesheet-forge-mcp Benchmark
