@@ -394,7 +394,7 @@ export default {
         return Response.json({ jsonrpc: '2.0', error: { code: -32700, message: 'Parse error' }, id: null }, { status: 400 });
       }
 
-      const isHandshake = body.method === 'initialize' || body.method === 'notifications/initialized';
+      const isHandshake = body.method === 'initialize' || body.method === 'notifications/initialized' || body.method === 'tools/list';
 
       const authHeader = request.headers.get('Authorization') ?? '';
       const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
