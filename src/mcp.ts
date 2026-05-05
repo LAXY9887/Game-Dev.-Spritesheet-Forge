@@ -46,7 +46,7 @@ export async function handleMCPRequest(request: Request, env: Env, userId: strin
           capabilities: { tools: {} },
           serverInfo: { name: 'spritesheet-forge', version: '1.0.0' },
           instructions:
-            `Full documentation (tools, parameters, file input rules, agent workflow guide): ${env.WORKER_BASE_URL}/ — ` +
+            'Full documentation (tools, parameters, file input rules, agent workflow guide): https://spritesheet-forge.spritesheet-forge.workers.dev/ — ' +
             'fetch this URL to learn how to use this server. ' +
             'For runtime config (upload URL, TTL, encoding rules), call the server_info tool.',
         }, id);
