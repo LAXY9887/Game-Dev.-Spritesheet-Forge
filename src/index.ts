@@ -247,7 +247,7 @@ export default {
         headers: {
           'Content-Type': obj.httpMetadata?.contentType ?? 'application/octet-stream',
           'Cache-Control': 'private, max-age=86400',
-          'Content-Disposition': `attachment; filename="${key}"`,
+          'Content-Disposition': `${contentType.startsWith('image/') ? 'inline' : 'attachment'}; filename="${key}"`,
         },
       });
     }
