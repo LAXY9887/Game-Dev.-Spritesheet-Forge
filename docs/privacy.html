@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy — Spritesheet Forge MCP</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,sans-serif;color:#1a1a1a;line-height:1.7;background:#fff}
+  .header{background:linear-gradient(135deg,#0f1923 0%,#1a2f45 100%);color:#fff;padding:40px 24px}
+  .header a{color:#a8c4d8;text-decoration:none;font-size:.9rem}
+  .header h1{font-size:1.6rem;font-weight:700;margin-top:8px}
+  .header p{color:#a8c4d8;font-size:.9rem;margin-top:4px}
+  .container{max-width:760px;margin:0 auto;padding:48px 24px}
+  h2{font-size:1.1rem;font-weight:700;margin:2rem 0 .6rem;color:#111}
+  p{margin:.5rem 0;color:#333}
+  ul{padding-left:1.5rem;margin:.5rem 0}
+  li{margin:.3rem 0;color:#333}
+  code{background:#f3f4f6;padding:2px 6px;border-radius:4px;font-size:.87em}
+  footer{text-align:center;padding:32px 24px;color:#999;font-size:.85rem;border-top:1px solid #f0f0f0}
+  footer a{color:#0066cc;text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div style="max-width:760px;margin:0 auto">
+    <a href="index.html">← Back to Spritesheet Forge</a>
+    <h1>Privacy Policy</h1>
+    <p>Last updated: May 2026</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <p>This Privacy Policy describes how Spritesheet Forge MCP ("the Service") collects, uses, and stores information when you connect and use the Service through GitHub OAuth or an MCP-compatible client.</p>
+
+  <h2>1. Information We Collect</h2>
+  <p>The Service collects the minimum information required to operate:</p>
+  <ul>
+    <li><strong>GitHub user ID</strong> — a numeric identifier provided by GitHub OAuth, used to associate your session and usage quota.</li>
+    <li><strong>GitHub username (login)</strong> — stored alongside your session token for display and logging purposes.</li>
+    <li><strong>Usage count</strong> — the number of tool operations you have performed in the current billing period, used to enforce quota limits.</li>
+    <li><strong>Uploaded and processed files</strong> — image files you submit for processing (PNG, GIF, WebP). These are stored temporarily and deleted automatically.</li>
+  </ul>
+  <p>We do not collect email addresses, IP addresses, or any personal information beyond what GitHub OAuth provides.</p>
+
+  <h2>2. How We Use Your Information</h2>
+  <ul>
+    <li><strong>Authentication</strong> — your GitHub user ID is used to identify your session and verify your access token.</li>
+    <li><strong>Quota enforcement</strong> — your usage count is checked and incremented on each tool call to enforce the monthly operation limit.</li>
+    <li><strong>File processing</strong> — uploaded files are processed by the image processing backend and the output is stored temporarily for you to retrieve.</li>
+  </ul>
+  <p>We do not use your information for advertising, profiling, or any purpose beyond operating the Service.</p>
+
+  <h2>3. Data Retention</h2>
+  <ul>
+    <li><strong>Session tokens</strong> — expire after 30 days of inactivity.</li>
+    <li><strong>Output files</strong> — all processed output files and uploaded files are automatically deleted <strong>1 hour</strong> after creation.</li>
+    <li><strong>Usage counters</strong> — reset on the 1st of each calendar month.</li>
+  </ul>
+
+  <h2>4. Third-Party Services</h2>
+  <p>The Service relies on the following third-party infrastructure:</p>
+  <ul>
+    <li><strong>GitHub OAuth</strong> — used for authentication. Subject to <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub's Privacy Statement</a>.</li>
+    <li><strong>Cloudflare Workers, KV, and R2</strong> — used for hosting, session storage, quota storage, and temporary file storage. Subject to <a href="https://www.cloudflare.com/privacypolicy/">Cloudflare's Privacy Policy</a>.</li>
+    <li><strong>Google Cloud Run</strong> — used for image processing. Uploaded files are transmitted to Cloud Run for processing and are not retained beyond the duration of the request. Subject to <a href="https://cloud.google.com/terms/cloud-privacy-notice">Google Cloud's Privacy Notice</a>.</li>
+  </ul>
+  <p>We do not sell or share your data with any third parties beyond the infrastructure providers listed above.</p>
+
+  <h2>5. Security</h2>
+  <p>Access tokens are stored in Cloudflare KV and are not exposed in logs or responses. All communication between the client and the Service occurs over HTTPS. File storage uses Cloudflare R2 with server-side encryption.</p>
+
+  <h2>6. Your Rights</h2>
+  <p>You may revoke the Service's access to your GitHub account at any time via <strong>GitHub → Settings → Applications → Authorized OAuth Apps</strong>. Revoking access invalidates your session token and stops any further data collection.</p>
+
+  <h2>7. Changes to This Policy</h2>
+  <p>We may update this Privacy Policy from time to time. The "Last updated" date at the top of this page will reflect any changes. Continued use of the Service after changes constitutes acceptance of the updated policy.</p>
+
+  <h2>8. Contact</h2>
+  <p>For privacy-related questions, please open an issue at <a href="https://github.com/LAXY9887/Game-Dev.-Spritesheet-Forge/issues">github.com/LAXY9887/Game-Dev.-Spritesheet-Forge/issues</a>.</p>
+
+</div>
+
+<footer>
+  <a href="index.html">Spritesheet Forge</a> &nbsp;·&nbsp;
+  <a href="tos.html">Terms of Service</a> &nbsp;·&nbsp;
+  MIT License
+</footer>
+
+</body>
+</html>
