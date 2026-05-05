@@ -497,6 +497,52 @@ export default {
       });
     }
 
+    // ── GitHub Marketplace webhook ────────────────────────────────────────────
+    if (url.pathname === '/github/webhook' && request.method === 'POST') {
+      const rawBody = await request.text();
+      const sig = request.headers.get('X-Hub-Signature-256') ?? '';
+
+      // Verify HMAC-SHA256 signature
+      const key = await crypto.subtle.importKey(
+        'raw', new TextEncoder().encode(env.GITHUB_WEBHOOK_SECRET),
+        { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+      );
+      const mac = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(rawBody));
+      const expected = 'sha256=' + Array.from(new Uint8Array(mac)).map(b => b.toString(16).padStart(2, '0')).join('');
+      if (expected !== sig) {
+        return new Response('Unauthorized', { status: 401 });
+      }
+
+      const event = request.headers.get('X-GitHub-Event') ?? '';
+      if (event === 'ping') return new Response('pong', { status: 200 });
+
+      if (event === 'marketplace_purchase') {
+        const payload = JSON.parse(rawBody) as {
+          action: string;
+          marketplace_purchase: {
+            account: { id: number; login: string };
+            plan: { name: string; monthly_price_in_cents: number };
+          };
+        };
+        const { action, marketplace_purchase: { account, plan } } = payload;
+        const userId = String(account.id);
+        const planKey = `marketplace:${userId}`;
+
+        if (action === 'purchased' || action === 'changed') {
+          const limit = plan.monthly_price_in_cents > 0 ? 1000 : parseInt(env.FREE_QUOTA_LIMIT, 10);
+          await env.QUOTAS.put(planKey, JSON.stringify({
+            plan: plan.name,
+            limit,
+            since: new Date().toISOString(),
+          }));
+        } else if (action === 'cancelled' || action === 'pending_cancellation') {
+          await env.QUOTAS.delete(planKey);
+        }
+      }
+
+      return new Response('OK', { status: 200 });
+    }
+
     // ── Token helper script ───────────────────────────────────────────────────
     if (url.pathname === '/get-token.py' && (request.method === 'GET' || request.method === 'HEAD')) {
       return new Response(GET_TOKEN_SCRIPT, {

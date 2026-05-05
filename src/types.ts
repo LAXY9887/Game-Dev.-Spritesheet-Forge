@@ -12,6 +12,7 @@ export interface Env {
   GITHUB_CLIENT_SECRET: string;
   WORKER_BASE_URL: string;
   FREE_QUOTA_LIMIT: string;
+  GITHUB_WEBHOOK_SECRET: string;
 }
 
 export interface SessionData {

@@ -19,3 +19,9 @@ MCP_KEY=your_mcp_key_here
 # Authorization callback: https://spritesheet-forge.workers.dev/oauth/callback
 GITHUB_CLIENT_ID=your_github_client_id_here
 GITHUB_CLIENT_SECRET=your_github_client_secret_here
+
+# ── GitHub Marketplace Webhook secret ─────────────────────────────────────────
+# Set in GitHub App → Marketplace listing → Webhook → Secret
+# Generate with: openssl rand -hex 32
+# Deploy with:   npx wrangler secret put GITHUB_WEBHOOK_SECRET
+GITHUB_WEBHOOK_SECRET=your_github_webhook_secret_here

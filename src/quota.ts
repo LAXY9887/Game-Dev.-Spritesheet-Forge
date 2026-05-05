@@ -14,9 +14,21 @@ export function getResetDate(): string {
   return `${year}-${mm}-01`; // "YYYY-MM-01" in local time, always the 1st of next month
 }
 
+async function getPlanLimit(env: Env, userId: string): Promise<number> {
+  if (!userId) return parseInt(env.FREE_QUOTA_LIMIT, 10);
+  const raw = await env.QUOTAS.get(`marketplace:${userId}`);
+  if (raw) {
+    const plan = JSON.parse(raw) as { limit: number };
+    return plan.limit;
+  }
+  return parseInt(env.FREE_QUOTA_LIMIT, 10);
+}
+
 export async function getQuotaStatus(env: Env, userId: string): Promise<QuotaStatus> {
-  const limit = parseInt(env.FREE_QUOTA_LIMIT, 10);
-  const raw = await env.QUOTAS.get(quotaKey(userId));
+  const [limit, raw] = await Promise.all([
+    getPlanLimit(env, userId),
+    env.QUOTAS.get(quotaKey(userId)),
+  ]);
   const data: QuotaData = raw ? JSON.parse(raw) : { count: 0, updatedAt: new Date().toISOString() };
   return { used: data.count, limit, reset_at: getResetDate() };
 }
