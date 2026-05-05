@@ -148,12 +148,8 @@
 
     <h3>Authentication</h3>
     <p>Uses <strong>GitHub OAuth 2.1 with PKCE</strong>. MCP clients run the flow automatically. To get a Bearer token manually (for curl or benchmark scripts):</p>
-    <ol class="steps">
-      <li>Clone the repository: <code>git clone https://github.com/LAXY9887/Game-Dev.-Spritesheet-Forge</code></li>
-      <li>Run the helper script: <code>python3 scripts/get-token.py</code></li>
-      <li>The script registers an OAuth client, opens your browser for GitHub login, and prints the token.</li>
-      <li>Use it as: <code>Authorization: Bearer &lt;token&gt;</code></li>
-    </ol>
+    <pre><code>curl -O https://spritesheet-forge.spritesheet-forge.workers.dev/get-token.py && python3 get-token.py</code></pre>
+    <p>Opens a GitHub login page, then prints and saves the token to <code>~/.spritesheet-forge-token</code>. Requires Python 3 (pre-installed on macOS/Linux).</p>
   </div>
 </section>
 
@@ -423,15 +419,15 @@ processing tool. Output URLs expire in 1 hour.</code></pre>
     </ol>
 
     <h3>Getting a token for the upload endpoint</h3>
-    <p>The <code>/upload</code> endpoint requires a Bearer token. MCP clients (Claude Desktop, Claude Code) store this token in an encrypted internal store — <strong>there is no config file or keychain entry you can read</strong>. The only reliable method is the helper script:</p>
+    <p>MCP clients (Claude Desktop, Claude Code) store their token in an encrypted internal store — <strong>there is no config file or keychain entry you can read</strong>. Run the one-line helper instead (Python 3, no extra dependencies):</p>
+    <pre><code>curl -O https://spritesheet-forge.spritesheet-forge.workers.dev/get-token.py && python3 get-token.py</code></pre>
     <ol class="steps">
-      <li>Clone the repository: <code>git clone https://github.com/LAXY9887/Game-Dev.-Spritesheet-Forge</code></li>
-      <li>Run: <code>python3 scripts/get-token.py</code></li>
-      <li>A GitHub login page opens in your browser. Approve access.</li>
-      <li>The token is printed to the terminal and saved to <code>~/.spritesheet-forge-token</code>.</li>
+      <li>The script downloads, registers an OAuth client, and opens a GitHub login page.</li>
+      <li>Approve access in the browser.</li>
+      <li>The token is printed and saved to <code>~/.spritesheet-forge-token</code>.</li>
       <li>Pass it to your agent: <em>"Here is my upload token: Bearer &lt;token&gt;"</em></li>
     </ol>
-    <div class="tip">If you cannot obtain a token, ask your agent to accept the file as a <strong>public HTTPS URL</strong> instead.</div>
+    <div class="tip">If you cannot run the script, ask your agent to accept the file as a <strong>public HTTPS URL</strong> instead.</div>
 
     <h3>Common errors</h3>
     <table>

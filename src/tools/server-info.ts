@@ -39,13 +39,12 @@ toolRegistry.register({
           'This avoids both the 4 MB MCP payload limit and the ~250 KB shell output context limit.',
         token_for_upload:
           'The upload endpoint requires a Bearer token. ' +
-          'MCP clients (Claude Desktop, Claude Code) store this token internally in an encrypted format that cannot be read from the filesystem. ' +
-          'The only reliable way to obtain a token is to run the helper script: ' +
-          '"python3 scripts/get-token.py" from the spritesheet-forge repository root ' +
-          '(https://github.com/LAXY9887/Game-Dev.-Spritesheet-Forge). ' +
-          'The script opens a GitHub login page and saves the token to ~/.spritesheet-forge-token. ' +
-          'Tell the user: "Please clone https://github.com/LAXY9887/Game-Dev.-Spritesheet-Forge and run python3 scripts/get-token.py, then share the token printed to the terminal." ' +
-          'If the user cannot obtain a token, ask them to provide the file as a public HTTPS URL instead.',
+          'MCP clients (Claude Desktop, Claude Code) store this token in an encrypted internal store — there is no config file or keychain entry the user can read. ' +
+          'Tell the user to run this single command (requires Python 3, no other dependencies): ' +
+          `curl -O ${env.WORKER_BASE_URL}/get-token.py && python3 get-token.py` +
+          ' — this downloads and runs the OAuth helper, opens a GitHub login page, and saves the token to ~/.spritesheet-forge-token. ' +
+          'The user then pastes the printed token back to you. ' +
+          'If the user cannot run the script, ask them to provide the file as a public HTTPS URL instead.',
         previous_output:
           'Output URLs from any tool on this server can be passed directly as input to other tools ' +
           '— no re-encoding or re-uploading needed. The server reads them directly from storage.',
