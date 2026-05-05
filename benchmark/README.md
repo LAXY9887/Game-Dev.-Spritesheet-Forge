@@ -92,6 +92,9 @@ Results are automatically saved to `benchmark/results/YYYY-MM-DD.txt`.
 
 ## Sample Output
 
+A committed reference run is available in [`sample/2026-05-05.txt`](sample/2026-05-05.txt).
+Output URLs in the sample have expired (1-hour TTL) and are included for format reference only.
+
 ```
 spritesheet-forge-mcp Benchmark
 Endpoint : https://mcp.clawstudiouo.com
