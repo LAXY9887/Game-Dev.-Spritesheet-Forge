@@ -1,20 +1,20 @@
 spritesheet-forge-mcp Benchmark Results
-Date    : 2026-05-05 02:37 UTC
+Date    : 2026-05-05 03:22 UTC
 Endpoint: https://mcp.clawstudiouo.com
-Note    : Output URLs expire after 1 hour and are included for reference only.
+Note    : Output URLs expire after 1 hour. Actual output files are saved in outputs/.
 
-STATUS  TOOL / METHOD                                           TIME        OUTPUT URL / ERROR
+STATUS  TOOL / METHOD                                           TIME        OUTPUT FILE
 ──────  ──────────────────────────────────────────────────────  ──────────  ──────────────────────────────────────────────────────────────
-PASS    gif_to_spritesheet                                      3580ms      https://mcp.clawstudiouo.com/output/output-8dadfe1c90a22c79aba1f61e0abf6063.png
-PASS    gif_to_frames                                           3092ms      https://mcp.clawstudiouo.com/output/output-8d9821fa34daa9505d89c0f09b64a2b6.zip
-PASS    split_spritesheet  (3×2, frames+atlas JSON)            6362ms      https://mcp.clawstudiouo.com/output/output-8fb56b796edc37bb9ed508d1d71879bc.zip
-PASS    spritesheet_to_animation  (3×2 → animated gif)       3236ms      https://mcp.clawstudiouo.com/output/output-62f33806f21d5c56c50fe27b8afdb7b4.gif
-PASS    trim_png                                                2872ms      https://mcp.clawstudiouo.com/output/output-7bda915fb21d812953060d91d5b3f927.png
-PASS    png_to_spritesheet  (2-image horizontal)                3732ms      https://mcp.clawstudiouo.com/output/output-79023ba5db54421bb141f1481e484652.png
-PASS    frames_to_animation  (2 frames → gif)                 4408ms      https://mcp.clawstudiouo.com/output/output-36374d6422c2e5e3870aedbb74eb32b5.gif
-PASS    smol.gif 221 KB — direct base64                        3182ms      https://mcp.clawstudiouo.com/output/output-528851d98b477ef3f5ef7b150f54f982.png
-PASS    smol.gif 221 KB — upload(597ms) + URL                  3429ms      https://mcp.clawstudiouo.com/output/output-f7be59a96da76a4789e9bf6219f28994.png
-PASS    beeg.gif 4.7 MB — direct base64                        12497ms     https://mcp.clawstudiouo.com/output/output-a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6.png
-PASS    beeg.gif 4.7 MB — upload(1908ms) + URL                 12584ms     https://mcp.clawstudiouo.com/output/output-84718daa4ab2cf68e322328f6c407dd9.png
+PASS    gif_to_spritesheet                                      7185ms      outputs/spritesheet.png
+PASS    gif_to_frames                                           3548ms      outputs/frames.zip
+PASS    split_spritesheet  (3×2, frames+atlas JSON)            4772ms      outputs/split.zip
+PASS    spritesheet_to_animation  (3×2 → animated gif)       3191ms      outputs/animation.gif
+PASS    trim_png                                                3406ms      outputs/trimmed.png
+PASS    png_to_spritesheet  (2-image horizontal)                3745ms      outputs/composite.png
+PASS    frames_to_animation  (2 frames → gif)                 4441ms      outputs/frames_animation.gif
+PASS    smol.gif 221 KB — direct base64                        2787ms      (spritesheet, same as above)
+PASS    smol.gif 221 KB — upload(665ms) + URL                  3519ms      (spritesheet, same as above)
+PASS    beeg.gif 4.7 MB — direct base64                        12472ms     (beeg spritesheet, not saved — 4.9 MB)
+PASS    beeg.gif 4.7 MB — upload(1332ms) + URL                 12624ms     (beeg spritesheet, not saved — 4.9 MB)
 
 Passed: 11  Failed: 0  Total: 11
