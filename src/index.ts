@@ -311,6 +311,88 @@ export default {
       return Response.json({ status: 'ok' });
     }
 
+    // ── Landing page ──────────────────────────────────────────────────────────
+    if (url.pathname === '/' && (request.method === 'GET' || request.method === 'HEAD')) {
+      const body = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spritesheet Forge MCP</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #1a1a1a; }
+  h1 { font-size: 1.6rem; margin-bottom: .25rem; }
+  h2 { font-size: 1.1rem; margin-top: 2rem; border-bottom: 1px solid #eee; padding-bottom: .3rem; }
+  code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-size: .9em; }
+  pre { background: #f4f4f4; padding: 12px 16px; border-radius: 6px; overflow-x: auto; }
+  a { color: #0066cc; }
+  ul { padding-left: 1.4rem; }
+  li { margin: .3rem 0; }
+  .badge { display: inline-block; background: #e8f4e8; color: #2a7a2a; border-radius: 4px; padding: 2px 8px; font-size: .85em; }
+</style>
+</head>
+<body>
+<h1>Spritesheet Forge MCP <span class="badge">hosted</span></h1>
+<p>A remote <a href="https://modelcontextprotocol.io">Model Context Protocol</a> server for game-dev spritesheet workflows.
+Connect it to Claude or any MCP-compatible AI client to pack, split, trim, and animate sprites through natural language.</p>
+
+<p><strong>GitHub:</strong> <a href="https://github.com/LAXY9887/Game-Dev.-Spritesheet-Forge">LAXY9887/Game-Dev.-Spritesheet-Forge</a><br>
+<strong>MCP endpoint:</strong> <code>${env.WORKER_BASE_URL}/mcp</code></p>
+
+<h2>Available Tools (8)</h2>
+<ul>
+  <li><code>server_info</code> — Runtime config: upload URL, TTL, file size limits, encoding rules</li>
+  <li><code>gif_to_spritesheet</code> — Convert GIF animation into a spritesheet PNG grid</li>
+  <li><code>gif_to_frames</code> — Extract GIF frames as individual PNGs (ZIP)</li>
+  <li><code>spritesheet_to_animation</code> — Slice spritesheet back into animated GIF / WebP</li>
+  <li><code>frames_to_animation</code> — Assemble PNG frames into animated GIF / WebP</li>
+  <li><code>png_to_spritesheet</code> — Merge multiple PNGs into a spritesheet (grid / packed / horizontal / vertical)</li>
+  <li><code>split_spritesheet</code> — Split spritesheet into frames + optional TexturePacker atlas JSON</li>
+  <li><code>trim_png</code> — Crop transparent edges from PNG files</li>
+</ul>
+
+<h2>Quick Start</h2>
+<p><strong>Claude Desktop</strong> — add to <code>claude_desktop_config.json</code>:</p>
+<pre>{
+  "mcpServers": {
+    "spritesheet-forge": {
+      "type": "http",
+      "url": "${env.WORKER_BASE_URL}/mcp"
+    }
+  }
+}</pre>
+<p><strong>Claude Code (CLI):</strong></p>
+<pre>claude mcp add spritesheet-forge --transport http ${env.WORKER_BASE_URL}/mcp</pre>
+<p>On first use, your MCP client will open a GitHub login page to authorize access.</p>
+
+<h2>Authentication</h2>
+<p>Uses <strong>GitHub OAuth 2.1 with PKCE</strong>. MCP clients handle the flow automatically.
+For manual token acquisition (curl testing, benchmark), run:</p>
+<pre>python3 scripts/get-token.py</pre>
+<p>from the repository root. Discovery endpoint: <a href="${env.WORKER_BASE_URL}/.well-known/oauth-authorization-server"><code>/.well-known/oauth-authorization-server</code></a></p>
+
+<h2>File Input Rules</h2>
+<ul>
+  <li><strong>&lt; 4 MB:</strong> base64-encode bytes, prepend <code>data:&lt;mime&gt;;base64,</code> — strip ALL whitespace from the base64 string</li>
+  <li><strong>≥ 4 MB:</strong> <code>POST ${env.WORKER_BASE_URL}/upload</code> (multipart/form-data, field <code>file</code>, Bearer token) → pass returned URL</li>
+  <li><strong>Previous tool output:</strong> pass the URL directly — no re-encoding needed</li>
+  <li><strong>Output TTL:</strong> all URLs expire 1 hour after creation</li>
+</ul>
+
+<h2>Limits</h2>
+<ul>
+  <li>Max file size: 20 MB</li>
+  <li>Free quota: 100 operations / GitHub account / month</li>
+  <li>Session token lifetime: 30 days</li>
+</ul>
+
+<p style="margin-top:3rem;color:#888;font-size:.85em">MIT License &mdash; <a href="https://github.com/LAXY9887/Game-Dev.-Spritesheet-Forge">source on GitHub</a></p>
+</body>
+</html>`;
+      return new Response(body, {
+        headers: { 'Content-Type': 'text/html;charset=utf-8', 'Cache-Control': 'public, max-age=300' },
+      });
+    }
+
     return new Response('Not found', { status: 404 });
   },
 
