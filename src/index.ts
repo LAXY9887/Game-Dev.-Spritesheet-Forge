@@ -379,8 +379,8 @@ Connect it to Claude or any MCP-compatible AI client to pack, split, trim, and a
 <p>All <code>file</code> / <code>files</code> parameters accept three input types:</p>
 <table>
   <tr><th>Condition</th><th>Method</th></tr>
-  <tr><td>File &lt; 4 MB</td><td>Base64-encode bytes → prepend <code>data:&lt;mime&gt;;base64,</code><br><strong>Strip ALL whitespace and newlines from the base64 string before prepending.</strong> Many encoders (e.g. <code>openssl base64</code>) insert newlines every 76 chars — these cause <code>INVALID_BASE64</code>.</td></tr>
-  <tr><td>File ≥ 4 MB</td><td><code>POST ${base}/upload</code> (multipart/form-data, field <code>file</code>, Bearer token required) → use <code>"url"</code> from response.<br>A 4.7 MB GIF encodes to ~6.3 MB JSON — most MCP clients reject payloads that large.</td></tr>
+  <tr><td>File &lt; ~185 KB<br><em>(AI agents: inline-safe)</em></td><td>Base64-encode bytes → prepend <code>data:&lt;mime&gt;;base64,</code><br><strong>Strip ALL whitespace and newlines from the base64 string before prepending.</strong> Many encoders (e.g. <code>openssl base64</code>) insert newlines every 76 chars — these cause <code>INVALID_BASE64</code>.</td></tr>
+  <tr><td>File ≥ ~185 KB<br><em>(or any file encoded via shell)</em></td><td><code>POST ${base}/upload</code> (multipart/form-data, field <code>file</code>, Bearer token required) → use <code>"url"</code> from response.<br><strong>AI agents:</strong> shell output &gt; ~250 KB is stored to a temp file that cannot be read back (256 KB tool limit). This makes base64 impractical for files larger than ~185 KB even when under the 4 MB MCP payload limit. When in doubt, use upload.</td></tr>
   <tr><td>Previous tool output</td><td>Pass the output <code>url</code> directly — server reads from its own storage, no HTTP round-trip.</td></tr>
 </table>
 <div class="warn"><strong>Output TTL:</strong> all output URLs (tools + uploads) expire <strong>1 hour</strong> after creation. Do not cache them across sessions. If a URL is stale, re-run the originating tool.</div>
@@ -513,7 +513,15 @@ Connect it to Claude or any MCP-compatible AI client to pack, split, trim, and a
 <p>The server reads chained URLs directly from its own storage with no HTTP overhead.</p>
 
 <h3>Token for the upload endpoint</h3>
-<p>The upload endpoint requires a Bearer token. MCP clients hold this token internally — the user can find it in their client settings or logs. Alternatively, run <code>python3 scripts/get-token.py</code> from the repository root. If the user cannot provide a token, ask them to supply the file as a public HTTPS URL instead.</p>
+<p>The upload endpoint requires a Bearer token. MCP clients (Claude Desktop, Claude Code) store this token in an encrypted internal store that <strong>cannot be read from the filesystem</strong> — there is no config file or keychain entry accessible to users or agents.</p>
+<p>The only reliable method is the helper script in the <a href="https://github.com/LAXY9887/Game-Dev.-Spritesheet-Forge">spritesheet-forge repository</a>:</p>
+<ol>
+  <li>Clone or download: <code>git clone https://github.com/LAXY9887/Game-Dev.-Spritesheet-Forge</code></li>
+  <li>Run: <code>python3 scripts/get-token.py</code></li>
+  <li>GitHub login opens in the browser. After approving, the token is printed and saved to <code>~/.spritesheet-forge-token</code>.</li>
+  <li>Pass it to the agent: <em>"Here is my upload token: Bearer &lt;token&gt;"</em></li>
+</ol>
+<p>If the user cannot obtain a token, ask them to provide the file as a <strong>public HTTPS URL</strong> instead.</p>
 
 <h3>TTL in long workflows</h3>
 <p>All output URLs expire <strong>1 hour</strong> after creation. If a multi-step workflow spans more than one hour, re-run the step that produced the stale URL rather than retrying with it.</p>

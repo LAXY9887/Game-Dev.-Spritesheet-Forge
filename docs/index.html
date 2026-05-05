@@ -361,7 +361,7 @@
 
     <div class="decision-grid">
       <div class="decision-card small">
-        <h4>File &lt; 4 MB</h4>
+        <h4>File &lt; ~185 KB (inline-safe)</h4>
         <p>Base64-encode and prepend a data URI:</p>
         <pre><code>data:image/gif;base64,R0lGODl...</code></pre>
         <p><strong>Strip ALL whitespace and newlines</strong> from the base64 string. Encoders like <code>openssl base64</code> insert newlines every 76 chars — these cause <code>INVALID_BASE64</code>.</p>
@@ -372,13 +372,13 @@ base64 -i file.gif | tr -d '\n'
 base64.b64encode(data).decode()</code></pre>
       </div>
       <div class="decision-card large">
-        <h4>File ≥ 4 MB</h4>
+        <h4>File ≥ ~185 KB (or any shell-encoded file)</h4>
         <p>Upload first, then use the returned URL:</p>
         <pre><code>curl -X POST https://mcp.clawstudiouo.com/upload \
   -H "Authorization: Bearer &lt;token&gt;" \
   -F "file=@animation.gif"
 # → { "url": "https://..." }</code></pre>
-        <p>A 4.7 MB GIF encodes to ~6.3 MB JSON — most MCP clients reject payloads that large. The upload endpoint avoids this.</p>
+        <p><strong>Why ~185 KB and not 4 MB?</strong> In Claude Code / Claude Desktop, shell output &gt; ~250 KB is written to a temp file that AI tools cannot read back (256 KB limit). A 185 KB file encodes to ~247 KB base64 — just under the limit. When in doubt, use upload.</p>
       </div>
     </div>
 
@@ -423,11 +423,13 @@ processing tool. Output URLs expire in 1 hour.</code></pre>
     </ol>
 
     <h3>Getting a token for the upload endpoint</h3>
-    <p>The <code>/upload</code> endpoint requires a Bearer token. Your MCP client holds this token internally — find it in the client settings or logs. Alternatively:</p>
+    <p>The <code>/upload</code> endpoint requires a Bearer token. MCP clients (Claude Desktop, Claude Code) store this token in an encrypted internal store — <strong>there is no config file or keychain entry you can read</strong>. The only reliable method is the helper script:</p>
     <ol class="steps">
-      <li>Run <code>python3 scripts/get-token.py</code> from the repository root</li>
-      <li>The script opens a GitHub login page and prints the Bearer token</li>
-      <li>Pass it to your agent: <em>"Here is my upload token: Bearer xyz..."</em></li>
+      <li>Clone the repository: <code>git clone https://github.com/LAXY9887/Game-Dev.-Spritesheet-Forge</code></li>
+      <li>Run: <code>python3 scripts/get-token.py</code></li>
+      <li>A GitHub login page opens in your browser. Approve access.</li>
+      <li>The token is printed to the terminal and saved to <code>~/.spritesheet-forge-token</code>.</li>
+      <li>Pass it to your agent: <em>"Here is my upload token: Bearer &lt;token&gt;"</em></li>
     </ol>
     <div class="tip">If you cannot obtain a token, ask your agent to accept the file as a <strong>public HTTPS URL</strong> instead.</div>
 

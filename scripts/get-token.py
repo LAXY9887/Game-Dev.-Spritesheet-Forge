@@ -173,9 +173,17 @@ def main():
     print("ACCESS TOKEN (Bearer):")
     print(token)
     print("="*60)
-    print("\nTo use in benchmark:")
+
+    token_file = os.path.expanduser("~/.spritesheet-forge-token")
+    with open(token_file, "w") as f:
+        f.write(token + "\n")
+    print(f"\nToken saved to: {token_file}")
+    print("To use in benchmark:")
     print(f'  export SPRITESHEET_TOKEN="{token}"')
-    print(f"  bash benchmark/run.sh\n")
+    print(f"  bash benchmark/run.sh")
+    print(f"\nTo use with curl:")
+    print(f'  TOKEN=$(cat {token_file})')
+    print(f'  curl -H "Authorization: Bearer $TOKEN" https://mcp.clawstudiouo.com/upload ...\n')
 
 
 if __name__ == "__main__":
