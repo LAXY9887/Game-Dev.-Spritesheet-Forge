@@ -42,10 +42,20 @@ This phase benchmarks `gif_to_spritesheet` across four combinations:
 | Direct base64 | `beeg.gif` | 4.7 MB | ~6.3 MB JSON payload |
 | Upload + URL | `beeg.gif` | 4.7 MB | Two round-trips |
 
-The **4 MB threshold** is the recommended cutover: above that size, embedding
-base64 produces a JSON payload exceeding typical MCP client limits (~6.3 MB for
-a 4.7 MB file). The raw processing time is similar either way — upload overhead
-is negligible compared to Cloud Run compute time for large GIFs.
+The **4 MB threshold** is the hard cutover. Above that size:
+
+- A 4.7 MB GIF becomes a **~6.3 MB JSON-RPC payload** when base64-encoded.
+  Most MCP clients reject or truncate payloads above 4–8 MB, making this
+  approach unreliable regardless of server support.
+- Latency is **not** the deciding factor — as shown in the benchmark results
+  below, beeg.gif base64 (12497 ms) and upload+URL (12584 ms) are within 1%
+  of each other. Cloud Run processing time dominates for large files; the
+  upload round-trip is negligible.
+
+**Agent guidance:** If you are choosing between base64 and upload for a file,
+check the benchmark Phase 2 table. For files ≥ 4 MB, always use `POST /upload`
+first — not for speed, but because a 6+ MB JSON payload will likely be rejected
+by your MCP client before it ever reaches the server.
 
 ---
 
@@ -174,12 +184,18 @@ all measurements.
 ### Upload vs base64
 
 For small files (< 4 MB), **direct base64** wins on total latency because it
-avoids a separate upload round-trip. The tradeoff is a larger JSON-RPC payload.
+avoids a separate upload round-trip. The tradeoff is a slightly larger
+JSON-RPC payload (221 KB × 4/3 ≈ 295 KB for smol.gif), which is well within
+any client limit.
 
-For large files (≥ 4 MB), base64 and upload+URL have nearly identical total
-latency — Cloud Run processing time dominates. However, embedding a 4.7 MB file
-as base64 produces a ~6.3 MB JSON payload that exceeds typical MCP client
-limits, so **upload + URL** is the only practical option above that threshold.
+For large files (≥ 4 MB), **the constraint is payload size, not latency.**
+The Phase 2 benchmark shows beeg.gif base64 (12497 ms) and upload+URL
+(12584 ms) are within 1% of each other — Cloud Run processing 126 frames
+dominates in both cases. The reason to use upload+URL is that a 4.7 MB file
+encodes to a **~6.3 MB JSON-RPC payload**, which most MCP clients will reject
+or truncate before the request ever reaches the server.
+
+**Decision rule for agents:** file < 4 MB → base64; file ≥ 4 MB → `POST /upload` first.
 
 ### Chained tool calls
 
