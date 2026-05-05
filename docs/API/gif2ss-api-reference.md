@@ -532,15 +532,17 @@ Background removal uses a flood-fill algorithm seeded from all four corners of e
 
 ## Authentication — Two Keys Explained
 
-There are two different keys involved. They serve completely different purposes and should not be confused:
+There are three different keys involved. They serve completely different purposes and should not be confused:
 
 | Key                         | Where to find it                               | Used by                                         | Purpose                                                                                                  |
 | --------------------------- | ---------------------------------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | `X-RapidAPI-Key`          | RapidAPI Developer Dashboard&gt; Apps          | **Callers** — included in every request  | Identifies the caller to the RapidAPI gateway for auth and billing                                       |
 | `X-RapidAPI-Proxy-Secret` | Hub Listing&gt; Gateway &gt; Firewall Settings | **Backend only** — never sent by callers | Injected by RapidAPI proxy when forwarding to the backend, used to verify the request came from RapidAPI |
+| `X-MCP-Key` | `.env` / Cloud Run env var | **MCP gateway** — sent by spritesheet-forge Worker | Allows the spritesheet-forge MCP server to call the backend directly, with rate limiting enforced at the Worker layer |
 
 - `X-RapidAPI-Key` is consumed by the RapidAPI gateway and **never forwarded to the backend**.
 - `X-RapidAPI-Proxy-Secret` is added by the proxy and **never visible to callers**.
+- `X-MCP-Key` is used by the MCP Worker to authenticate requests from the MCP gateway.
 
 ### Testing Note
 

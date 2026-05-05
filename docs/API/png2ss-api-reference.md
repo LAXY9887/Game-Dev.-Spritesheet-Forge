@@ -24,12 +24,13 @@ That's it — you get back a single PNG spritesheet. Read on for layout options,
 
 ## Authentication
 
-All requests must include these two headers (provided by your RapidAPI subscription):
+All requests must include these headers (provided by your RapidAPI subscription):
 
 | Header | Description |
 |---|---|
 | `x-rapidapi-host` | `easy-png-to-sprites.p.rapidapi.com` |
 | `x-rapidapi-key` | Your RapidAPI subscription key |
+| `X-MCP-Key` | For the spritesheet-forge MCP server. Rate-limited per user by the MCP gateway. |
 
 Missing or invalid keys return `403 Forbidden` from the RapidAPI gateway.
 
