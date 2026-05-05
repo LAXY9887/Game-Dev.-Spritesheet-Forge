@@ -55,7 +55,8 @@
   /* Example images */
   .example{margin:16px 0}
   .example-label{font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#888;margin-bottom:6px}
-  .example img{max-width:100%;border:1px solid #e5e7eb;border-radius:8px;display:block}
+  .example img{max-width:100%;max-height:240px;object-fit:contain;border:1px solid #e5e7eb;border-radius:8px;display:block}
+  .example-row img{max-width:100%;max-height:240px;object-fit:contain;border:1px solid #e5e7eb;border-radius:8px;display:block}
   .example-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;margin:16px 0}
   .example-row .arrow{font-size:1.4rem;color:#888;text-align:center}
   @media(max-width:600px){.example-row{grid-template-columns:1fr;}.example-row .arrow{transform:rotate(90deg)}}
