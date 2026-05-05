@@ -355,6 +355,19 @@ export default {
       });
     }
 
+    // ── MCP CORS preflight ────────────────────────────────────────────────────
+    if (url.pathname === '/mcp' && request.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          'Access-Control-Max-Age': '86400',
+        },
+      });
+    }
+
     // ── MCP endpoint ──────────────────────────────────────────────────────────
     if (url.pathname === '/mcp' && request.method === 'GET') {
       const authHeader = request.headers.get('Authorization') ?? '';
@@ -386,12 +399,14 @@ export default {
     }
 
     if (url.pathname === '/mcp' && request.method === 'POST') {
+      const corsHeaders = { 'Access-Control-Allow-Origin': '*' };
+
       // Peek at the method to allow unauthenticated handshake methods
       let body: { method?: string; id?: unknown };
       try {
         body = await request.clone().json() as { method?: string; id?: unknown };
       } catch {
-        return Response.json({ jsonrpc: '2.0', error: { code: -32700, message: 'Parse error' }, id: null }, { status: 400 });
+        return Response.json({ jsonrpc: '2.0', error: { code: -32700, message: 'Parse error' }, id: null }, { status: 400, headers: corsHeaders });
       }
 
       const isHandshake = body.method === 'initialize' || body.method === 'notifications/initialized' || body.method === 'tools/list';
@@ -400,23 +415,36 @@ export default {
       const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
       if (!token) {
-        if (isHandshake) return handleMCPRequest(request, env, '');
+        if (isHandshake) {
+          const res = await handleMCPRequest(request, env, '');
+          const newRes = new Response(res.body, res);
+          newRes.headers.set('Access-Control-Allow-Origin', '*');
+          return newRes;
+        }
         return Response.json(
           { jsonrpc: '2.0', error: { code: -32001, message: 'Unauthorized' }, id: body.id ?? null },
-          { status: 401, headers: { 'WWW-Authenticate': `Bearer realm="${env.WORKER_BASE_URL}"` } }
+          { status: 401, headers: { ...corsHeaders, 'WWW-Authenticate': `Bearer realm="${env.WORKER_BASE_URL}"` } }
         );
       }
 
       const session = await lookupSession(env, token);
       if (!session) {
-        if (isHandshake) return handleMCPRequest(request, env, '');
+        if (isHandshake) {
+          const res = await handleMCPRequest(request, env, '');
+          const newRes = new Response(res.body, res);
+          newRes.headers.set('Access-Control-Allow-Origin', '*');
+          return newRes;
+        }
         return Response.json(
           { jsonrpc: '2.0', error: { code: -32001, message: 'Invalid or expired token' }, id: body.id ?? null },
-          { status: 401, headers: { 'WWW-Authenticate': `Bearer realm="${env.WORKER_BASE_URL}", error="invalid_token"` } }
+          { status: 401, headers: { ...corsHeaders, 'WWW-Authenticate': `Bearer realm="${env.WORKER_BASE_URL}", error="invalid_token"` } }
         );
       }
 
-      return handleMCPRequest(request, env, session.userId);
+      const res = await handleMCPRequest(request, env, session.userId);
+      const newRes = new Response(res.body, res);
+      newRes.headers.set('Access-Control-Allow-Origin', '*');
+      return newRes;
     }
 
     // ── File upload ───────────────────────────────────────────────────────────
