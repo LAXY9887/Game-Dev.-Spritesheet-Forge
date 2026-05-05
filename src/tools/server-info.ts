@@ -15,6 +15,34 @@ toolRegistry.register({
     properties: {},
     required: [],
   },
+  outputSchema: {
+    type: 'object',
+    properties: {
+      upload_url: { type: 'string', description: 'URL for uploading files via multipart/form-data (Bearer token required)' },
+      output_ttl_seconds: { type: 'number', description: 'Seconds until output files expire' },
+      max_file_bytes: { type: 'number', description: 'Maximum accepted file size in bytes' },
+      base64_threshold_bytes: { type: 'number', description: 'Files smaller than this can be sent as base64 data URIs' },
+      file_input_rules: {
+        type: 'object',
+        description: 'Guidance for agents on how to pass file inputs',
+        properties: {
+          small_file: { type: 'string' },
+          large_file: { type: 'string' },
+          token_for_upload: { type: 'string' },
+          previous_output: { type: 'string' },
+          ttl_warning: { type: 'string' },
+        },
+      },
+    },
+    required: ['upload_url', 'output_ttl_seconds', 'max_file_bytes', 'base64_threshold_bytes', 'file_input_rules'],
+  },
+  annotations: {
+    title: 'Server Info',
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
   async handler(_args, env: Env, _userId) {
     const uploadUrl = `${env.WORKER_BASE_URL}/upload`;
     const ttlMinutes = FILE_TTL_MS / 1000 / 60;

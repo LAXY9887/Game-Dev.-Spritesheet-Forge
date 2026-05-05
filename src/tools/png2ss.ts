@@ -4,6 +4,26 @@ import { checkQuota, incrementQuota, getQuotaStatus } from '../quota';
 import { MCPError } from '../errors';
 import type { Env, ToolResult } from '../types';
 
+const IMAGE_OUTPUT_SCHEMA = {
+  type: 'object',
+  properties: {
+    url: { type: 'string', description: 'Download URL for the output file (expires in 1 hour)' },
+    expires_at: { type: 'string', format: 'date-time', description: 'ISO 8601 expiry timestamp' },
+    content_type: { type: 'string', description: 'MIME type of the output file (image/png, image/gif, application/zip, etc.)' },
+    size_bytes: { type: 'number', description: 'Output file size in bytes' },
+    quota: {
+      type: 'object',
+      properties: {
+        used: { type: 'number', description: 'Operations used this month' },
+        limit: { type: 'number', description: 'Monthly operation limit' },
+        reset_at: { type: 'string', description: 'Date quota resets (YYYY-MM-01)' },
+      },
+      required: ['used', 'limit', 'reset_at'],
+    },
+  },
+  required: ['url', 'expires_at', 'content_type', 'size_bytes', 'quota'],
+} as const;
+
 async function buildFormData(
   args: Record<string, unknown>,
   fileFields: string[],
@@ -88,6 +108,8 @@ toolRegistry.register({
     },
     required: ['files'],
   },
+  outputSchema: IMAGE_OUTPUT_SCHEMA,
+  annotations: { title: 'PNG to Spritesheet', readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
   async handler(args, env, userId) {
     await checkQuota(env, userId);
     const form = await buildFormData(args, ['files'], env);
@@ -121,6 +143,8 @@ toolRegistry.register({
     },
     required: ['file'],
   },
+  outputSchema: IMAGE_OUTPUT_SCHEMA,
+  annotations: { title: 'Split Spritesheet', readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
   async handler(args, env, userId) {
     await checkQuota(env, userId);
     const form = await buildFormData(args, ['file'], env);
@@ -141,6 +165,8 @@ toolRegistry.register({
     },
     required: ['files'],
   },
+  outputSchema: IMAGE_OUTPUT_SCHEMA,
+  annotations: { title: 'Trim PNG', readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
   async handler(args, env, userId) {
     await checkQuota(env, userId);
     const form = await buildFormData(args, ['files'], env);
