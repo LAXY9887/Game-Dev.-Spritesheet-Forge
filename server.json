@@ -1,0 +1,13 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.LAXY9887/spritesheet-forge",
+  "title": "Spritesheet Forge",
+  "description": "Game-dev sprite tools: PNG/GIF to spritesheet, split, trim, animate. OAuth-authenticated MCP server.",
+"version": "1.0.0",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.clawstudiouo.com/mcp"
+    }
+  ]
+}
