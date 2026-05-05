@@ -33,17 +33,19 @@ The server accepts file input two ways:
 - **Upload endpoint** — `POST /upload` returns a temporary URL that any tool
   accepts directly as input
 
-This phase benchmarks `gif_to_spritesheet` across three combinations:
+This phase benchmarks `gif_to_spritesheet` across four combinations:
 
 | Method | Fixture | Size | Notes |
 |--------|---------|------|-------|
 | Direct base64 | `smol.gif` | 221 KB | Single round-trip |
 | Upload + URL | `smol.gif` | 221 KB | Two round-trips |
-| Upload + URL | `beeg.gif` | 4.7 MB | Base64 not tested (>4 MB threshold) |
+| Direct base64 | `beeg.gif` | 4.7 MB | ~6.3 MB JSON payload |
+| Upload + URL | `beeg.gif` | 4.7 MB | Two round-trips |
 
 The **4 MB threshold** is the recommended cutover: above that size, embedding
-base64 in the JSON-RPC payload adds significant overhead with no benefit over
-uploading first.
+base64 produces a JSON payload exceeding typical MCP client limits (~6.3 MB for
+a 4.7 MB file). The raw processing time is similar either way — upload overhead
+is negligible compared to Cloud Run compute time for large GIFs.
 
 ---
 
@@ -94,6 +96,7 @@ Results are automatically saved to `benchmark/results/YYYY-MM-DD.txt`.
 
 A committed reference run is available in [`sample/2026-05-05.txt`](sample/2026-05-05.txt).
 Output URLs have expired (1-hour TTL) and are included for format reference only.
+The sample covers 11 tests (7 Phase 1 + 4 Phase 2).
 
 ### Phase 1 — Tool Coverage
 
@@ -113,9 +116,10 @@ Output URLs have expired (1-hour TTL) and are included for format reference only
 |--------|---------|-------:|----------:|------:|
 | Direct base64 | smol.gif 221 KB | — | 3182 ms | **3182 ms** |
 | Upload + URL | smol.gif 221 KB | 597 ms | 2832 ms | **3429 ms** |
+| Direct base64 | beeg.gif 4.7 MB | — | 12497 ms | **12497 ms** |
 | Upload + URL | beeg.gif 4.7 MB | 1908 ms | 10676 ms | **12584 ms** |
 
-> beeg.gif total time is dominated by Cloud Run processing 126 frames into a 12-column spritesheet, not by the upload itself.
+> beeg.gif base64 and upload+URL are within 1% of each other — both dominated by Cloud Run processing 126 frames. The upload overhead (~1908 ms) is absorbed by faster tool-call time (payload is a short URL instead of 6.3 MB of JSON).
 
 ### Full console output
 
@@ -144,11 +148,12 @@ Phase 2 — Upload vs Base64 Efficiency
   ✓ smol.gif 221 KB — direct base64                    3182ms
     ↑ uploaded in 597ms
   ✓ smol.gif 221 KB — upload(597ms) + URL              3429ms
+  ✓ beeg.gif 4.7 MB — direct base64                   12497ms
     ↑ uploaded in 1908ms
-  ✓ beeg.gif 4.7 MB — upload(1908ms) + URL  [base64 N/A]  12584ms
+  ✓ beeg.gif 4.7 MB — upload(1908ms) + URL            12584ms
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ALL PASSED  Passed: 10  Failed: 0  Total: 10
+ALL PASSED  Passed: 11  Failed: 0  Total: 11
 ```
 
 ---
@@ -171,9 +176,10 @@ all measurements.
 For small files (< 4 MB), **direct base64** wins on total latency because it
 avoids a separate upload round-trip. The tradeoff is a larger JSON-RPC payload.
 
-For large files (≥ 4 MB), **upload + URL** is the only practical option.
-Embedding a 4.7 MB file as base64 would produce a ~6.3 MB JSON payload, which
-exceeds typical MCP client limits.
+For large files (≥ 4 MB), base64 and upload+URL have nearly identical total
+latency — Cloud Run processing time dominates. However, embedding a 4.7 MB file
+as base64 produces a ~6.3 MB JSON payload that exceeds typical MCP client
+limits, so **upload + URL** is the only practical option above that threshold.
 
 ### Chained tool calls
 

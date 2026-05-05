@@ -217,7 +217,18 @@ else
   rows+=("FAIL|smol.gif 221KB — upload + URL|0ms|upload failed"); fail=$((fail+1))
 fi
 
-# beeg.gif — upload + URL (base64 not tested: >4 MB threshold)
+# beeg.gif — direct base64 (uses temp file to avoid ARG_MAX with 6+ MB payload)
+python3 - "$FIXTURES/beeg.gif" "$ARGS_FILE" <<'PYEOF'
+import sys, json, base64
+with open(sys.argv[1], 'rb') as f:
+    data = f.read()
+uri = "data:image/gif;base64," + base64.b64encode(data).decode()
+with open(sys.argv[2], 'w') as f:
+    json.dump({"file": uri, "columns": 12}, f)
+PYEOF
+T=$(now_ms); R=$(mcp_call gif_to_spritesheet "$ARGS_FILE"); check "beeg.gif 4.7 MB — direct base64" "$R" "$(($(now_ms)-T))"
+
+# beeg.gif — upload + URL
 T_UP=$(now_ms)
 BEEG_URL=$(do_upload "$FIXTURES/beeg.gif" "image/gif")
 UP_MS=$(($(now_ms)-T_UP))
@@ -225,7 +236,7 @@ if [[ -n "$BEEG_URL" ]]; then
   printf "    ${YEL}↑${NC} uploaded in %dms\n" "$UP_MS"
   python3 -c "import json,sys; print(json.dumps({'file':sys.argv[1],'columns':12}))" "$BEEG_URL" > "$ARGS_FILE"
   T=$(now_ms); R=$(mcp_call gif_to_spritesheet "$ARGS_FILE"); T_TOOL=$(($(now_ms)-T))
-  check "beeg.gif 4.7 MB — upload(${UP_MS}ms) + URL  [base64 N/A]" "$R" "$((UP_MS+T_TOOL))"
+  check "beeg.gif 4.7 MB — upload(${UP_MS}ms) + URL" "$R" "$((UP_MS+T_TOOL))"
 else
   printf "  ${RED}✗${NC} beeg.gif upload failed\n"
   rows+=("FAIL|beeg.gif 4.7MB — upload + URL|0ms|upload failed"); fail=$((fail+1))

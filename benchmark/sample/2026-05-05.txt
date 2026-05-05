@@ -12,8 +12,9 @@ PASS    spritesheet_to_animation  (3×2 → animated gif)       3236ms      http
 PASS    trim_png                                                2872ms      https://mcp.clawstudiouo.com/output/output-7bda915fb21d812953060d91d5b3f927.png
 PASS    png_to_spritesheet  (2-image horizontal)                3732ms      https://mcp.clawstudiouo.com/output/output-79023ba5db54421bb141f1481e484652.png
 PASS    frames_to_animation  (2 frames → gif)                 4408ms      https://mcp.clawstudiouo.com/output/output-36374d6422c2e5e3870aedbb74eb32b5.gif
-PASS    smol.gif 221 KB — direct base64                       3182ms      https://mcp.clawstudiouo.com/output/output-528851d98b477ef3f5ef7b150f54f982.png
-PASS    smol.gif 221 KB — upload(597ms) + URL                 3429ms      https://mcp.clawstudiouo.com/output/output-f7be59a96da76a4789e9bf6219f28994.png
-PASS    beeg.gif 4.7 MB — upload(1908ms) + URL  [base64 N/A]  12584ms     https://mcp.clawstudiouo.com/output/output-84718daa4ab2cf68e322328f6c407dd9.png
+PASS    smol.gif 221 KB — direct base64                        3182ms      https://mcp.clawstudiouo.com/output/output-528851d98b477ef3f5ef7b150f54f982.png
+PASS    smol.gif 221 KB — upload(597ms) + URL                  3429ms      https://mcp.clawstudiouo.com/output/output-f7be59a96da76a4789e9bf6219f28994.png
+PASS    beeg.gif 4.7 MB — direct base64                        12497ms     https://mcp.clawstudiouo.com/output/output-a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6.png
+PASS    beeg.gif 4.7 MB — upload(1908ms) + URL                 12584ms     https://mcp.clawstudiouo.com/output/output-84718daa4ab2cf68e322328f6c407dd9.png
 
-Passed: 10  Failed: 0  Total: 10
+Passed: 11  Failed: 0  Total: 11
