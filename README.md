@@ -107,33 +107,22 @@ MCP clients like Claude Desktop and Claude Code run the OAuth flow automatically
 
 ### Getting a token manually (for benchmark / curl testing)
 
-If you need a Bearer token directly — to run the benchmark script, test with curl, or integrate with a custom client — use the included helper:
+If you need a Bearer token directly — to run the benchmark script, test with curl, or integrate with a custom client — run this single command (requires Python 3, pre-installed on macOS/Linux):
 
 ```bash
-python3 scripts/get-token.py
+curl -O https://spritesheet-forge.spritesheet-forge.workers.dev/get-token.py && python3 get-token.py
 ```
 
-This script will:
-1. Register a temporary OAuth client via [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591)
-2. Open your browser to the GitHub authorization page
-3. Capture the callback on `localhost:8899`
-4. Exchange the code for a Bearer token and print it
-
-```
-============================================================
-ACCESS TOKEN (Bearer):
-7553ebbb...
-============================================================
-
-To use in benchmark:
-  export SPRITESHEET_TOKEN="7553ebbb..."
-  bash benchmark/run.sh
-```
+This will:
+1. Download the OAuth helper script directly from the server
+2. Register a temporary OAuth client via [RFC 7591](https://datatracker.ietf.org/doc/html/rfc7591)
+3. Open your browser to the GitHub authorization page
+4. Exchange the code for a Bearer token, print it, and save it to `~/.spritesheet-forge-token`
 
 To test against a self-hosted instance:
 
 ```bash
-python3 scripts/get-token.py --base-url https://your-worker.workers.dev
+python3 get-token.py --base-url https://your-worker.workers.dev
 ```
 
 ### Token lifetime
@@ -202,7 +191,7 @@ If you're chaining tools, just pass the output URL directly:
 
 The server reads from its own storage without making an HTTP request — this is always faster than re-uploading.
 
-### 2. Base64 data URI (files < 4 MB)
+### 2. Base64 data URI (files < ~185 KB)
 
 Encode the raw file bytes and prepend the MIME type:
 
@@ -221,11 +210,11 @@ import base64
 base64.b64encode(open("file.gif","rb").read()).decode()
 ```
 
-For files larger than ~3 MB, the encoded data URI approaches or exceeds typical MCP client payload limits. Use the upload endpoint instead.
+> **AI agent note:** In Claude Code / Claude Desktop, shell command output exceeding ~250 KB is written to a temp file that AI tools cannot read back (256 KB tool limit). A ~185 KB file encodes to ~247 KB base64 — just under the limit. For any file larger than ~185 KB, or any file you encoded via a shell command, use the upload endpoint instead.
 
-### 3. Upload endpoint (files ≥ 4 MB)
+### 3. Upload endpoint (files ≥ ~185 KB)
 
-For large files, upload first and pass the returned URL:
+For files ≥ ~185 KB (or any file encoded via shell command), upload first and pass the returned URL:
 
 ```bash
 # 1. Get the upload URL
@@ -255,8 +244,8 @@ Upload endpoint details:
 
 | File size | Method |
 |-----------|--------|
-| < 4 MB | Base64 data URI |
-| ≥ 4 MB | Upload endpoint → pass URL |
+| < ~185 KB | Base64 data URI |
+| ≥ ~185 KB, or encoded via shell command | Upload endpoint → pass URL |
 | Previous tool output | Pass URL directly |
 
 ### Output TTL
@@ -396,9 +385,9 @@ Spritesheet Forge is designed for agentic use. The tools are self-documenting: e
 
 For best results, give the agent this context upfront:
 
-> "I've connected Spritesheet Forge MCP. For any file larger than 4 MB, call `server_info` first to get the upload endpoint URL, then POST the file there before calling the processing tool."
+> "I've connected Spritesheet Forge MCP. For any file larger than ~185 KB, call `server_info` first to get the upload endpoint URL and token instructions, then POST the file there before calling the processing tool."
 
-For small files (< 4 MB) the agent can base64-encode directly. For large files, calling `server_info` first ensures it has the correct upload URL without guessing.
+For tiny files (< ~185 KB) the agent can base64-encode directly. For anything larger, calling `server_info` first gives the agent the exact upload URL and explains how to obtain a Bearer token.
 
 ### Chaining tools
 
@@ -437,7 +426,7 @@ The `url` field is what to pass to the next tool or present to the user for down
 | Limit | Value |
 |-------|-------|
 | Max file size | 20 MB |
-| Base64 recommended limit | 4 MB (above this, use upload endpoint) |
+| Base64 practical limit | ~185 KB for AI agents (above this, use upload endpoint) |
 | Output file TTL | 1 hour |
 | Upload TTL | 1 hour |
 | Free quota | 100 operations / GitHub account / month |
@@ -467,7 +456,7 @@ To run the benchmark yourself:
 
 ```bash
 # 1. Get a Bearer token
-python3 scripts/get-token.py
+curl -O https://spritesheet-forge.spritesheet-forge.workers.dev/get-token.py && python3 get-token.py
 
 # 2. Export and run
 export SPRITESHEET_TOKEN="your_token"
@@ -522,7 +511,7 @@ Yes — the MCP endpoint accepts standard JSON-RPC 2.0 over HTTP. You can call i
 
 **Q: The agent keeps trying to encode a large file as base64 instead of using the upload endpoint.**
 
-Tell the agent explicitly: *"This file is larger than 4 MB. Call `server_info` first to get the upload URL, then POST the file there before calling the tool."* The `server_info` tool returns the exact upload URL and explains the threshold.
+Tell the agent explicitly: *"This file is larger than ~185 KB. Call `server_info` first to get the upload URL and token instructions, then POST the file there before calling the tool."* The `server_info` tool returns the exact upload URL and explains both the threshold and how to obtain a Bearer token.
 
 ---
 

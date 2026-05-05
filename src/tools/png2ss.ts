@@ -70,7 +70,7 @@ toolRegistry.register({
   inputSchema: {
     type: 'object',
     properties: {
-      files: { type: 'array', items: { type: 'string' }, description: 'PNG files — HTTPS URLs, data URIs, or output URLs from previous tool calls (pass directly, no re-encoding needed). For local files < 4 MB each: base64-encode the bytes and prepend "data:image/png;base64," — you MUST strip ALL whitespace and newlines from the base64 string before prepending. For files ≥ 4 MB each: call server_info to get the upload_url, POST the file there (multipart/form-data, field "file", Bearer token), and pass the returned URL.' },
+      files: { type: 'array', items: { type: 'string' }, description: 'PNG files — HTTPS URLs, data URIs, or output URLs from previous tool calls (pass directly, no re-encoding needed). For local files < ~185 KB each: base64-encode the bytes and prepend "data:image/png;base64," — you MUST strip ALL whitespace and newlines from the base64 string before prepending (shell encoders like openssl insert newlines that cause INVALID_BASE64). For larger files or any file encoded via a shell command: call server_info to get the upload_url and token instructions, POST the file there (multipart/form-data, field "file", Bearer token required), and pass the returned URL.' },
       layout: { type: 'string', enum: ['grid', 'horizontal', 'vertical', 'packed'], description: 'Frame arrangement. Default: grid' },
       columns: { type: 'integer', description: 'Grid columns. Auto-calculated if omitted.' },
       cell_mode: { type: 'string', enum: ['auto_max', 'auto_uniform', 'fixed'], description: 'Cell sizing mode. Default: auto_max' },
@@ -135,7 +135,7 @@ toolRegistry.register({
   inputSchema: {
     type: 'object',
     properties: {
-      files: { type: 'array', items: { type: 'string' }, description: 'PNG files — HTTPS URLs, data URIs, or output URLs from previous tool calls (pass directly, no re-encoding needed). For local files < 4 MB each: base64-encode the bytes and prepend "data:image/png;base64," — you MUST strip ALL whitespace and newlines from the base64 string before prepending. For files ≥ 4 MB each: call server_info to get the upload_url, POST the file there (multipart/form-data, field "file", Bearer token), and pass the returned URL.' },
+      files: { type: 'array', items: { type: 'string' }, description: 'PNG files — HTTPS URLs, data URIs, or output URLs from previous tool calls (pass directly, no re-encoding needed). For local files < ~185 KB each: base64-encode the bytes and prepend "data:image/png;base64," — you MUST strip ALL whitespace and newlines from the base64 string before prepending (shell encoders like openssl insert newlines that cause INVALID_BASE64). For larger files or any file encoded via a shell command: call server_info to get the upload_url and token instructions, POST the file there (multipart/form-data, field "file", Bearer token required), and pass the returned URL.' },
       threshold: { type: 'integer', description: 'Alpha threshold 0-255. Pixels with alpha ≤ threshold are trimmed. Default: 0' },
       padding: { type: 'integer', description: 'Transparent margin to preserve around trimmed content. Default: 0' },
     },

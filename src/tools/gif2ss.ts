@@ -55,7 +55,7 @@ toolRegistry.register({
   inputSchema: {
     type: 'object',
     properties: {
-      file: { type: 'string', description: 'GIF file — HTTPS URL, data URI, or output URL from a previous tool call (pass directly, no re-encoding needed). For local files < 4 MB: base64-encode the bytes and prepend "data:image/gif;base64," — you MUST strip ALL whitespace and newlines from the base64 string before prepending. For files ≥ 4 MB: call server_info to get the upload_url, POST the file there (multipart/form-data, field "file", Bearer token), and pass the returned URL.' },
+      file: { type: 'string', description: 'GIF file — HTTPS URL, data URI, or output URL from a previous tool call (pass directly, no re-encoding needed). For local files < ~185 KB: base64-encode the bytes and prepend "data:image/gif;base64," — you MUST strip ALL whitespace and newlines from the base64 string before prepending (shell encoders like openssl insert newlines that cause INVALID_BASE64). For larger files or any file encoded via a shell command: call server_info to get the upload_url and token instructions, POST the file there (multipart/form-data, field "file", Bearer token required), and pass the returned URL.' },
       columns: { type: 'integer', description: 'Grid columns. Auto-calculated if omitted.' },
       padding: { type: 'integer', description: 'Pixel gap between frames. Default: 0' },
       remove_bg: { type: 'boolean', description: 'Remove background from each frame. Default: false' },
@@ -78,7 +78,7 @@ toolRegistry.register({
   inputSchema: {
     type: 'object',
     properties: {
-      file: { type: 'string', description: 'GIF file — HTTPS URL, data URI, or output URL from a previous tool call (pass directly, no re-encoding needed). For local files < 4 MB: base64-encode the bytes and prepend "data:image/gif;base64," — you MUST strip ALL whitespace and newlines from the base64 string before prepending. For files ≥ 4 MB: call server_info to get the upload_url, POST the file there (multipart/form-data, field "file", Bearer token), and pass the returned URL.' },
+      file: { type: 'string', description: 'GIF file — HTTPS URL, data URI, or output URL from a previous tool call (pass directly, no re-encoding needed). For local files < ~185 KB: base64-encode the bytes and prepend "data:image/gif;base64," — you MUST strip ALL whitespace and newlines from the base64 string before prepending (shell encoders like openssl insert newlines that cause INVALID_BASE64). For larger files or any file encoded via a shell command: call server_info to get the upload_url and token instructions, POST the file there (multipart/form-data, field "file", Bearer token required), and pass the returned URL.' },
       remove_bg: { type: 'boolean', description: 'Remove background from each frame. Default: false' },
       bg_color: { type: 'string', description: '"auto" or hex "#RRGGBB"' },
       tolerance: { type: 'integer', description: 'Background removal threshold 0-255. Default: 30' },
@@ -125,7 +125,7 @@ toolRegistry.register({
   inputSchema: {
     type: 'object',
     properties: {
-      file: { type: 'string', description: 'Spritesheet PNG — HTTPS URL, data URI, or output URL from a previous tool call (pass directly, no re-encoding needed). For local files < 4 MB: base64-encode the bytes and prepend "data:image/png;base64," — you MUST strip ALL whitespace and newlines from the base64 string before prepending. For files ≥ 4 MB: call server_info to get the upload_url, POST the file there (multipart/form-data, field "file", Bearer token), and pass the returned URL.' },
+      file: { type: 'string', description: 'Spritesheet PNG — HTTPS URL, data URI, or output URL from a previous tool call (pass directly, no re-encoding needed). For local files < ~185 KB: base64-encode the bytes and prepend "data:image/png;base64," — you MUST strip ALL whitespace and newlines from the base64 string before prepending (shell encoders like openssl insert newlines that cause INVALID_BASE64). For larger files or any file encoded via a shell command: call server_info to get the upload_url and token instructions, POST the file there (multipart/form-data, field "file", Bearer token required), and pass the returned URL.' },
       columns: { type: 'integer', description: 'Grid columns (grid mode)' },
       rows: { type: 'integer', description: 'Grid rows (grid mode)' },
       cell_width: { type: 'integer', description: 'Cell width in px (cell mode)' },
