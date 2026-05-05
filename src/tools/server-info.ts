@@ -31,10 +31,14 @@ toolRegistry.register({
           'otherwise the server will reject it with INVALID_BASE64.',
         large_file:
           `Files ≥ ${BASE64_THRESHOLD_BYTES / 1024 / 1024} MB: ` +
-          `POST the file to ${uploadUrl} (multipart/form-data, field name "file", ` +
-          'same Bearer token as the MCP connection). ' +
+          `POST the file to ${uploadUrl} (multipart/form-data, field name "file", Bearer token required). ` +
           'Use the "url" field from the JSON response as the tool\'s file input. ' +
           'Note: base64-encoding a 4.7 MB file produces a ~6.3 MB JSON payload that most MCP clients will reject.',
+        token_for_upload:
+          'The upload endpoint requires the same Bearer token used for the MCP connection. ' +
+          'The user\'s MCP client (e.g. Claude Desktop) holds this token — the user can find it in their client settings or logs. ' +
+          `Alternatively, they can run "python3 scripts/get-token.py" from the repository root, or visit ${uploadUrl.replace('/upload', '/oauth/authorize')} to complete the OAuth flow. ` +
+          'If the user cannot obtain a token, ask them to provide the file as a public HTTPS URL instead.',
         previous_output:
           'Output URLs from any tool on this server can be passed directly as input to other tools ' +
           '— no re-encoding or re-uploading needed. The server reads them directly from storage.',
