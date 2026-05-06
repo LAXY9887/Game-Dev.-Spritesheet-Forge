@@ -1,5 +1,7 @@
 # Spritesheet Forge MCP
 
+[![smithery badge](https://smithery.ai/badge/lxya98874322688423/spritesheet-forge)](https://smithery.ai/servers/lxya98874322688423/spritesheet-forge)
+
 A hosted [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server for game-dev spritesheet workflows. Connect it to Claude or any MCP-compatible AI client and pack, split, trim, and animate sprites through natural language — no local tools required.
 
 **Server endpoint:** `https://mcp.clawstudiouo.com/mcp`
