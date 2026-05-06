@@ -6,6 +6,10 @@ A hosted [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server 
 
 **Server endpoint:** `https://mcp.clawstudiouo.com/mcp`
 
+**Articles:**
+- [GIF to Game-Ready Spritesheet with Claude MCP: A Complete Walkthrough](https://clawstudiouo.com/blog/spritesheet-forge-mcp-demo) — real demo: GIF → spritesheet → TexturePacker atlas JSON, with tool chaining and Unity/Godot integration notes
+- [Building a Remote MCP Server with Cloudflare Workers and GCP Cloud Run](https://clawstudiouo.com/blog/building-remote-mcp-server) — technical deep-dive: OAuth 2.1 + PKCE, internal service auth, R2 file staging, and tool design for LLMs
+
 ---
 
 ## Table of Contents
