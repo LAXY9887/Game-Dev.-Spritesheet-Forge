@@ -21,3 +21,7 @@ FREE_QUOTA_LIMIT = "100"
 
 [triggers]
 crons = ["0 */2 * * *"]
+
+[observability.logs]
+enabled = true
+invocation_logs = true
