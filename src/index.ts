@@ -851,7 +851,7 @@ Connect it to Claude or any MCP-compatible AI client to pack, split, trim, and a
     let deleted = 0;
 
     do {
-      const listed = await env.SPRITESHEET_OUTPUT.list({ cursor, limit: 1000 });
+      const listed = await env.SPRITESHEET_OUTPUT.list({ cursor, limit: 1000, include: ['customMetadata'] });
       for (const obj of listed.objects) {
         const expiresAt = obj.customMetadata?.expiresAt;
         if (expiresAt && new Date(expiresAt) < now) {
