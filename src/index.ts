@@ -722,7 +722,7 @@ Connect it to Claude or any MCP-compatible AI client to pack, split, trim, and a
   <tr><td><code>files</code></td><td>string[]</td><td>required</td><td>PNG frames</td></tr>
   <tr><td><code>duration</code></td><td>integer</td><td>100</td><td>Frame duration ms (10–10000)</td></tr>
   <tr><td><code>loop</code></td><td>integer</td><td>0</td><td>Loop count (0 = infinite)</td></tr>
-  <tr><td><code>file_name_order</code></td><td>boolean</td><td>false</td><td>Sort by _N filename suffix</td></tr>
+  <tr><td><code>file_name_order</code></td><td>boolean</td><td>false</td><td>Sort by _N filename suffix. Rejected (422) for upload-endpoint URLs (renamed to <code>output-&lt;hex&gt;.png</code>) and data URIs — to order those, leave false and pass <code>files</code> in the desired order</td></tr>
   <tr><td><code>resize</code></td><td>string</td><td>"transparent"</td><td>"error" | "fill" | "transparent"</td></tr>
   <tr><td><code>bg_fill_color</code></td><td>string</td><td>"#000000"</td><td>Fill color when resize=fill</td></tr>
   <tr><td><code>output_format</code></td><td>string</td><td>"gif"</td><td>"gif" | "webp"</td></tr>
@@ -744,7 +744,7 @@ Connect it to Claude or any MCP-compatible AI client to pack, split, trim, and a
   <tr><td><code>padding</code></td><td>integer</td><td>0</td><td>Pixel gap between frames</td></tr>
   <tr><td><code>bg_color</code></td><td>string</td><td>"transparent"</td><td>"transparent" or "#RRGGBB"</td></tr>
   <tr><td><code>power_of_2</code></td><td>boolean</td><td>false</td><td>Pad output to next power of 2</td></tr>
-  <tr><td><code>file_name_order</code></td><td>boolean</td><td>false</td><td>Sort by _N filename suffix</td></tr>
+  <tr><td><code>file_name_order</code></td><td>boolean</td><td>false</td><td>Sort by _N filename suffix. Rejected (422) for upload-endpoint URLs (renamed to <code>output-&lt;hex&gt;.png</code>) and data URIs — to order those, leave false and pass <code>files</code> in the desired order</td></tr>
   <tr><td><code>trim_input</code></td><td>boolean</td><td>false</td><td>Auto-trim transparent edges before packing</td></tr>
   <tr><td><code>extrude</code></td><td>integer</td><td>0</td><td>Extrude outermost pixels by N px per frame</td></tr>
   <tr><td><code>metadata_format</code></td><td>string</td><td>"none"</td><td>"none" | "json_array" | "json_hash" | "css" — required (non-none) for layout=packed</td></tr>
