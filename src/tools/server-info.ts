@@ -67,12 +67,14 @@ toolRegistry.register({
           'This avoids both the 4 MB MCP payload limit and the ~250 KB shell output context limit.',
         token_for_upload:
           'The upload endpoint requires a Bearer token. ' +
-          'MCP clients (Claude Desktop, Claude Code) store this token in an encrypted internal store — there is no config file or keychain entry the user can read. ' +
-          'Tell the user to run this single command (requires Python 3, no other dependencies): ' +
-          `curl -O ${env.WORKER_BASE_URL}/get-token.py && python3 get-token.py` +
-          ' — this downloads and runs the OAuth helper, opens a GitHub login page, and saves the token to ~/.spritesheet-forge-token. ' +
-          'The user then pastes the printed token back to you. ' +
-          'If the user cannot run the script, ask them to provide the file as a public HTTPS URL instead.',
+          'MCP clients (Claude Desktop, Claude Code) store this token in an encrypted internal store the agent cannot read, ' +
+          'but the helper script below writes it to a plain file the agent CAN read — so the agent should drive this flow itself and must NOT ask the user to copy/paste the token. ' +
+          'AGENT STEPS (requires Python 3, no other dependencies): ' +
+          `(1) Run \`curl -O ${env.WORKER_BASE_URL}/get-token.py && python3 get-token.py\` yourself, in the BACKGROUND — ` +
+          'the script blocks for up to 120 s waiting for an OAuth callback, so a foreground shell call will hit its timeout. ' +
+          '(2) Tell the user only this: a browser window has opened, please complete the GitHub login. (The browser opens on the user\'s machine regardless of who launched the script; the login itself is the only step that needs a human.) ' +
+          '(3) Once the user has logged in, the script saves the token to ~/.spritesheet-forge-token. Read that file directly (e.g. `cat ~/.spritesheet-forge-token`) and use its contents as the Bearer token. Do not prompt the user to paste anything. ' +
+          'FALLBACKS: if you cannot run shell commands, ask the user to run the command above and paste the printed token back; if Python 3 is unavailable or the OAuth flow cannot complete, ask the user to provide the file as a public HTTPS URL instead.',
         previous_output:
           'Output URLs from any tool on this server can be passed directly as input to other tools ' +
           '— no re-encoding or re-uploading needed. The server reads them directly from storage.',

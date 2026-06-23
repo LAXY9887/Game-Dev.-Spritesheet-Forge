@@ -1,5 +1,5 @@
 import { toolRegistry } from './index';
-import { resolveFileInput, generateOutputKey, uploadToR2, outputUrl, FILE_TTL_MS } from '../file-handler';
+import { resolveFileInput, generateOutputKey, uploadToR2, outputUrl, multipartFileName, FILE_TTL_MS } from '../file-handler';
 import { checkQuota, incrementQuota, getQuotaStatus } from '../quota';
 import { MCPError } from '../errors';
 import type { Env, ToolResult } from '../types';
@@ -26,11 +26,13 @@ const IMAGE_OUTPUT_SCHEMA = {
 
 async function buildFormData(args: Record<string, unknown>, fileFields: string[], env: Env): Promise<FormData> {
   const form = new FormData();
+  const usedNames = new Set<string>();
+  let fileIndex = 0;
   for (const field of fileFields) {
     const inputs = Array.isArray(args[field]) ? args[field] as string[] : [args[field] as string];
     for (const input of inputs) {
-      const { blob } = await resolveFileInput(input, env);
-      form.append(field, blob, 'file');
+      const { blob, contentType } = await resolveFileInput(input, env);
+      form.append(field, blob, multipartFileName(input, fileIndex++, contentType, usedNames));
     }
   }
   for (const [key, value] of Object.entries(args)) {
@@ -126,7 +128,7 @@ toolRegistry.register({
       files: { type: 'array', items: { type: 'string' }, description: 'PNG frames — HTTPS URLs, data URIs, or output URLs from previous tool calls (pass directly, no re-encoding needed). For local files < 4 MB each: base64-encode the bytes and prepend "data:image/png;base64," — you MUST strip ALL whitespace and newlines from the base64 string before prepending. For files ≥ 4 MB each: call server_info to get the upload_url, POST the file there (multipart/form-data, field "file", Bearer token), and pass the returned URL.' },
       duration: { type: 'integer', description: 'Frame duration in ms (10-10000). Default: 100' },
       loop: { type: 'integer', description: 'Loop count. 0 = infinite. Default: 0' },
-      file_name_order: { type: 'boolean', description: 'Sort by _N filename suffix. Default: false' },
+      file_name_order: { type: 'boolean', description: 'Order frames by the numeric _N suffix in each filename (e.g. frame_00.png, frame_01.png) instead of by array order. REQUIRES every input filename to end with _N.<ext> — the name is taken from the URL\'s last path segment, so inputs without a _N suffix (e.g. server upload URLs like output-<hex>.png) are rejected. With URL/array inputs you usually do not need this: just pass `files` in the desired order and leave it false. Default: false' },
       resize: { type: 'string', enum: ['error', 'fill', 'transparent'], description: 'Dimension mismatch handling. Default: transparent' },
       bg_fill_color: { type: 'string', description: 'Fill color for resize=fill. Hex #RRGGBB. Default: #000000' },
       output_format: { type: 'string', enum: ['gif', 'webp'], description: 'Output format. Default: gif' },

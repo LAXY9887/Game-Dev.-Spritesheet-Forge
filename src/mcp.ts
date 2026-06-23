@@ -48,7 +48,12 @@ export async function handleMCPRequest(request: Request, env: Env, userId: strin
           instructions:
             'Full documentation (tools, parameters, file input rules, agent workflow guide): https://spritesheet-forge.spritesheet-forge.workers.dev/ — ' +
             'fetch this URL to learn how to use this server. ' +
-            'For runtime config (upload URL, TTL, encoding rules), call the server_info tool.',
+            'For runtime config (upload URL, TTL, encoding rules), call the server_info tool. ' +
+            'AGENT TIPS (avoid common mistakes): ' +
+            '(1) Check a local file\'s ACTUAL byte size before choosing how to pass it — base64 data URIs are only practical below ~185 KB; at or above that (or whenever a shell command does the encoding) use the upload endpoint from server_info. ' +
+            '(2) Tools that emit many frames (gif_to_frames, split_spritesheet) return a single ZIP whose entries are zero-padded `frame_NN.png` (e.g. frame_00.png, NOT frame_0.png); after unzipping, reference that exact zero-padded naming. ' +
+            '(3) The upload endpoint answers in ~1s per file, but always set a per-request timeout and never run an unbounded upload loop — a blocked call can otherwise hang for minutes. ' +
+            '(4) The Bearer token for uploads is saved to ~/.spritesheet-forge-token by the helper script — read it from that file yourself; do not ask the user to copy/paste it.',
         }, id);
 
       case 'notifications/initialized':

@@ -35,6 +35,45 @@ export function outputUrl(env: Pick<Env, 'WORKER_BASE_URL'>, key: string): strin
   return `${env.WORKER_BASE_URL}/output/${key}`;
 }
 
+/**
+ * Derive a stable, unique multipart filename for a resolved file input.
+ *
+ * The upstream image service uses each part's filename as the atlas/metadata key
+ * (png_to_spritesheet) and as the sort key for `file_name_order` (the `_N`
+ * suffix). Sending every part under a constant name (the old "file.png")
+ * collapses all metadata keys onto one entry and defeats filename ordering, so
+ * we derive a per-file name:
+ *   - from the URL's last path segment when the input is a URL — preserving
+ *     names like `frame_00.png` so ordering and atlas keys stay meaningful, or
+ *   - `frame_<index>.<ext>` for data URIs, which carry no filename.
+ *
+ * `used` guarantees uniqueness across the request: a repeated name is
+ * disambiguated with an index suffix so two inputs never share a metadata key.
+ */
+export function multipartFileName(
+  input: string,
+  index: number,
+  contentType: string,
+  used: Set<string>,
+): string {
+  const ext = EXTENSION[contentType] ?? 'png';
+  let name = `frame_${index}.${ext}`;
+  if (!input.startsWith('data:')) {
+    try {
+      const path = new URL(input).pathname;
+      const base = decodeURIComponent(path.slice(path.lastIndexOf('/') + 1));
+      if (base) name = /\.[a-z0-9]+$/i.test(base) ? base : `${base}.${ext}`;
+    } catch {
+      // not a parseable URL — keep the index-based name
+    }
+  }
+  if (used.has(name)) {
+    name = name.replace(/(\.[a-z0-9]+)$/i, `_${index}$1`);
+  }
+  used.add(name);
+  return name;
+}
+
 export async function resolveFileInput(input: string, env: Env): Promise<ResolvedFile> {
   if (input.startsWith('data:')) {
     return decodeDataUri(input);

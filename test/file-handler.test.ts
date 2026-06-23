@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { resolveFileInput, generateOutputKey, outputUrl } from '../src/file-handler';
+import { resolveFileInput, generateOutputKey, outputUrl, multipartFileName } from '../src/file-handler';
 import { MCPError } from '../src/errors';
 
 const mockEnv = {
@@ -108,5 +108,48 @@ describe('outputUrl', () => {
   it('returns the correct Worker URL for a key', () => {
     const url = outputUrl(mockEnv, 'output-abc.png');
     expect(url).toBe('https://spritesheet-forge.workers.dev/output/output-abc.png');
+  });
+});
+
+describe('multipartFileName', () => {
+  it('uses the last path segment of a URL so atlas keys stay meaningful', () => {
+    const used = new Set<string>();
+    const name = multipartFileName('https://example.com/sprites/frame_00.png', 0, 'image/png', used);
+    expect(name).toBe('frame_00.png');
+  });
+
+  it('preserves distinct names across frames (no collision)', () => {
+    const used = new Set<string>();
+    const inputs = [
+      'https://example.com/frame_00.png',
+      'https://example.com/frame_01.png',
+      'https://example.com/frame_02.png',
+    ];
+    const names = inputs.map((u, i) => multipartFileName(u, i, 'image/png', used));
+    expect(names).toEqual(['frame_00.png', 'frame_01.png', 'frame_02.png']);
+    expect(new Set(names).size).toBe(3);
+  });
+
+  it('falls back to an indexed name for data URIs that carry no filename', () => {
+    const used = new Set<string>();
+    const a = multipartFileName('data:image/png;base64,AAAA', 0, 'image/png', used);
+    const b = multipartFileName('data:image/png;base64,BBBB', 1, 'image/png', used);
+    expect(a).toBe('frame_0.png');
+    expect(b).toBe('frame_1.png');
+  });
+
+  it('disambiguates identical basenames with an index suffix', () => {
+    const used = new Set<string>();
+    const a = multipartFileName('https://a.example.com/frame.png', 0, 'image/png', used);
+    const b = multipartFileName('https://b.example.com/frame.png', 1, 'image/png', used);
+    expect(a).toBe('frame.png');
+    expect(b).toBe('frame_1.png');
+    expect(a).not.toBe(b);
+  });
+
+  it('appends an extension when the URL segment has none', () => {
+    const used = new Set<string>();
+    const name = multipartFileName('https://example.com/output/abcdef', 0, 'image/png', used);
+    expect(name).toBe('abcdef.png');
   });
 });
