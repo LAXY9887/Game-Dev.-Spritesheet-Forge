@@ -1,5 +1,5 @@
 import { toolRegistry } from './index';
-import { resolveFileInput, generateOutputKey, uploadToR2, outputUrl, FILE_TTL_MS } from '../file-handler';
+import { resolveFileInput, generateOutputKey, uploadToR2, outputUrl, multipartFileName, FILE_TTL_MS } from '../file-handler';
 import { checkQuota, incrementQuota, getQuotaStatus } from '../quota';
 import { MCPError } from '../errors';
 import type { Env, ToolResult } from '../types';
@@ -26,11 +26,13 @@ const IMAGE_OUTPUT_SCHEMA = {
 
 async function buildFormData(args: Record<string, unknown>, fileFields: string[], env: Env): Promise<FormData> {
   const form = new FormData();
+  const usedNames = new Set<string>();
+  let fileIndex = 0;
   for (const field of fileFields) {
     const inputs = Array.isArray(args[field]) ? args[field] as string[] : [args[field] as string];
     for (const input of inputs) {
-      const { blob } = await resolveFileInput(input, env);
-      form.append(field, blob, 'file');
+      const { blob, contentType } = await resolveFileInput(input, env);
+      form.append(field, blob, multipartFileName(input, fileIndex++, contentType, usedNames));
     }
   }
   for (const [key, value] of Object.entries(args)) {
