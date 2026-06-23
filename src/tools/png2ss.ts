@@ -103,7 +103,7 @@ toolRegistry.register({
       padding: { type: 'integer', description: 'Pixel gap between frames' },
       bg_color: { type: 'string', description: '"transparent" or hex "#RRGGBB"' },
       power_of_2: { type: 'boolean', description: 'Pad output to next power of 2' },
-      file_name_order: { type: 'boolean', description: 'Sort by _N filename suffix' },
+      file_name_order: { type: 'boolean', description: 'Order frames by the numeric _N suffix in each filename (e.g. frame_00.png, frame_01.png) instead of by array order. REQUIRES every input filename to end with _N.<ext> — the name is taken from the URL\'s last path segment, so inputs without a _N suffix (e.g. server upload URLs like output-<hex>.png) are rejected. With URL/array inputs you usually do not need this: just pass `files` in the desired order and leave it false. Default: false' },
       trim_input: { type: 'boolean', description: 'Auto-trim transparent edges before compositing' },
       extrude: { type: 'integer', description: 'Extrude outermost pixels by N px per frame' },
       metadata_format: { type: 'string', enum: ['none', 'json_array', 'json_hash', 'css'], description: 'Atlas metadata format. Required (non-none) when layout=packed' },
